@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glade — Bundle Builder Prototype (Desktop)</title>
+<!--
+  Throwaway interaction prototype — NOT production code.
+  Demonstrates: scroll-synced columns w/ rack-focus image transitions (ported from
+  pm-shopify-theme section-campaign-index-hero.css), marketing copy transitions,
+  in-place rail swap (goggle list -> model details), step progression header,
+  and bundle price behavior (15% off requires goggle + helmet + eligible accessory,
+  per theme/sections/bundle-builder-header.json copy).
+
+  Fonts: Synthese / Calling Code are not loadable here; Archivo + Space Mono stand in.
+
+  URL presets for screenshots: ?preset=detail | ?preset=bundle
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@350;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<style>
+  :root {
+    --c-accent: #ec572e;
+    --c-text: #2c2a26;
+    --c-text-2: #5e5e5e;
+    --c-border: #dcdcdc;
+    --c-border-strong: #2c2a26;
+    --c-warm: #edece5;
+    --c-white: #fff;
+
+    --f-body: 'Archivo', -apple-system, sans-serif;
+    --f-mono: 'Space Mono', ui-monospace, monospace;
+
+    /* Rack focus (ported from Pedal Mafia campaign hero). Blur is deliberately
+       modest: filter: blur() on a large image is expensive on weaker GPUs. */
+    --rf-blur: 16px;
+    --rf-out: 0.5s;
+    --rf-in: 0.9s;
+
+    --rail-w: 496px;
+    --header-h: 105px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--f-body); color: var(--c-text); background: var(--c-white); }
+  img { display: block; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; text-align: left; }
+
+  .mono { font-family: var(--f-mono); text-transform: uppercase; }
+  .h6 { font-family: var(--f-mono); font-size: 12px; font-weight: 700; letter-spacing: 3.6px; text-transform: uppercase; line-height: 1; }
+  .caption { font-family: var(--f-mono); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+
+  /* ============ chrome ============ */
+  .announcement {
+    background: var(--c-accent); color: #fff; text-align: center;
+    display: flex; gap: 16px; justify-content: center; padding: 12px 8px;
+  }
+  .announcement .shop { font-weight: 700; letter-spacing: 2.4px; }
+
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 40px; border-bottom: 1px solid var(--c-border); position: relative;
+    background: #fff;
+  }
+  .nav-links { display: flex; gap: 40px; font-family: var(--f-mono); font-size: 13px; font-weight: 700; letter-spacing: 2.8px; text-transform: uppercase; }
+  .nav-logo { position: absolute; left: 50%; transform: translateX(-50%); height: 24px; }
+  .nav-right { display: flex; align-items: center; gap: 48px; }
+  .nav-icons { display: flex; gap: 12px; }
+  .nav-icons img { width: 24px; height: 24px; }
+
+  /* ============ layout ============ */
+  .builder { display: flex; align-items: flex-start; }
+
+  /* ---- left: pinned image stage ---- */
+  .stage-col { flex: 1 1 auto; position: sticky; top: 0; height: 100vh; min-width: 0; }
+  .stage { position: relative; width: 100%; height: 100%; background: var(--c-warm); overflow: hidden; }
+
+  /* visibility (not just pointer-events) because model-viewer's shadow DOM
+     opts its internals back into hit-testing — hidden panels would still
+     swallow drags otherwise. The visibility flip is delayed until the fade-out
+     finishes so the rack-focus crossfade is unaffected. */
+  .stage-panel { position: absolute; inset: 0; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity var(--rf-out) ease, visibility 0s linear var(--rf-out); }
+  .stage-panel.is-active { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity var(--rf-in) ease, visibility 0s; }
+
+  .stage-img-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage-img { max-width: 72%; max-height: 62%; object-fit: contain; }
+  .stage-img--cover { position: absolute; inset: 0; max-width: none; max-height: none; width: 100%; height: 100%; object-fit: cover; }
+
+  /* Rack focus: blur sits on the image, and the image is inset by exactly the
+     blur radius so the soft edge never exposes the frame edge. Gated behind
+     .is-ready so the first paint isn't blurred. */
+  .is-ready .stage-panel .stage-img--cover {
+    width: calc(100% + var(--rf-blur) * 2);
+    height: calc(100% + var(--rf-blur) * 2);
+    margin: calc(var(--rf-blur) * -1);
+  }
+  .is-ready .stage-panel .stage-img {
+    filter: blur(var(--rf-blur));
+    transition: filter var(--rf-out) ease;
+  }
+  /* Asymmetric on purpose: outgoing softens quickly, incoming resolves slowly.
+     Matching durations reads mechanical rather than optical. */
+  .is-ready .stage-panel.is-active .stage-img {
+    filter: blur(0);
+    transition: filter var(--rf-in) cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .stage.is-transitioning .stage-img { will-change: filter; }
+
+  /* lens swap inside the goggle panel: same rack-focus treatment */
+  .lens-layer { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity var(--rf-out) ease, visibility 0s linear var(--rf-out); pointer-events: none; }
+  .lens-layer.is-active { opacity: 1; visibility: visible; transition: opacity var(--rf-in) ease, visibility 0s; pointer-events: auto; }
+  .is-ready .lens-layer .stage-img { filter: blur(var(--rf-blur)); transition: filter var(--rf-out) ease; }
+  .is-ready .lens-layer.is-active .stage-img { filter: blur(0); transition: filter var(--rf-in) cubic-bezier(0.22, 0.61, 0.36, 1); }
+
+  /* 3D models: image paints first; the model fades in over it once loaded,
+     occupying the same box as the image. */
+  .stage-3d {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 72%; height: 62%;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s ease;
+    --poster-color: transparent; background: transparent;
+    --progress-bar-height: 0px;
+  }
+  /* goggle viewers get the full panel so the framed model isn't clipped;
+     the still gets the same full-bleed contain box so the crossfade to 3D
+     happens in identical geometry */
+  .lens-layer .stage-3d { width: 100%; height: 100%; }
+  /* Sized by panel HEIGHT (like the model's vertical-FOV framing) so the
+     image/model match holds across viewport sizes, not just the one it was
+     measured at. 63.5% calibrated against the 110%-radius camera. */
+  .lens-layer .stage-img { max-width: none; max-height: none; width: auto; height: 57.3%; object-fit: contain; }
+  .has-model .stage-3d { opacity: 1; transition: opacity 0.8s ease; }
+  .has-model .stage-img { opacity: 0; transition: opacity 0.8s ease; }
+  /* interactive only on the layer actually shown AND the active panel —
+     loaded models in hidden panels paint above and would steal the drag */
+  .stage-panel.is-active .lens-layer.is-active.has-model .stage-3d,
+  .stage-panel.is-active .stage-img-wrap.has-model > .stage-3d { pointer-events: auto; }
+
+  /* marketing copy, top-left, transitions section to section */
+  .stage-copy {
+    position: absolute; top: 48px; left: 48px; width: min(663px, 70%);
+    font-size: 20px; line-height: 24px; letter-spacing: -0.8px;
+    text-wrap: balance;
+    opacity: 0; transform: translateY(14px);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+    pointer-events: none;
+  }
+  /* narrower measure so this copy wraps to 3 lines like the MagFit block */
+  .stage-copy--narrow { width: min(520px, 55%); }
+  .stage-copy strong { font-weight: 500; color: var(--c-text); }
+  .stage-copy span { color: #717171; }
+  .stage-panel.is-active .stage-copy { opacity: 1; transform: translateY(0); transition-delay: 0.25s; }
+  .stage-panel.is-leaving .stage-copy { opacity: 0; transform: translateY(-14px); transition-delay: 0s; }
+
+  .stage-mips { position: absolute; left: 40px; bottom: 40px; width: 64px; height: 64px; }
+
+  /* ---- right: rail ---- */
+  .rail {
+    width: var(--rail-w); flex: 0 0 var(--rail-w);
+    border-left: 1px solid var(--c-border);
+    display: flex; flex-direction: column; background: #fff;
+  }
+
+  .step-header {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; gap: 32px; align-items: center;
+    padding: 24px; background: #fff; border-bottom: 1px solid var(--c-border);
+  }
+  .step-tab { display: flex; gap: 16px; align-items: center; }
+  .step-tab .num {
+    display: none; width: 24px; height: 24px; align-items: center; justify-content: center;
+    background: var(--c-accent); color: #fff;
+    font-family: var(--f-mono); font-size: 12px; font-weight: 700;
+  }
+  .step-tab .lbl { font-family: var(--f-mono); font-size: 12px; font-weight: 700; letter-spacing: 3.6px; text-transform: uppercase; color: var(--c-border); transition: color 0.25s ease; }
+  .step-tab .lbl .select-word { display: none; }
+  .step-tab.is-active .num { display: flex; }
+  .step-tab.is-active .lbl { color: var(--c-accent); }
+  .step-tab.is-active .lbl .select-word { display: inline; }
+  .step-tab.is-done .lbl { color: var(--c-text-2); }
+
+  /* Steps align to top: 40px below the step header. Steps 2/3 scroll beneath
+     the sticky header (~73px tall), so their padding adds its height. */
+  .rail-step { min-height: 100vh; display: flex; flex-direction: column; justify-content: flex-start; padding: 113px 24px 40px; }
+  .rail-step[data-step-section="0"] { padding-top: 40px; }
+  /* last step doesn't need to fill the viewport — its 40px bottom padding
+     sets the gap to the price block */
+  .rail-step[data-step-section="2"] { min-height: 0; }
+
+  .eyebrow { margin-bottom: 8px; color: var(--c-text); }
+  .step-intro { margin-bottom: 48px; }
+  .step-intro h2 { font-size: 24px; line-height: 32px; letter-spacing: -0.96px; font-weight: 400; text-wrap: balance; }
+
+  /* ---- step 1 swap machine ---- */
+  .swap { position: relative; }
+  .swap-view, .detail-body { transition: opacity 0.3s ease, transform 0.3s ease; }
+  .swap-view.is-hidden, .detail-body.is-hidden { display: none; }
+  .swap-view.is-leaving, .detail-body.is-leaving { opacity: 0; transform: translateY(-16px); }
+  .swap-view.is-entering, .detail-body.is-entering { opacity: 0; transform: translateY(16px); transition: none; }
+  .detail-swap { position: relative; }
+  .detail-body { display: flex; flex-direction: column; gap: 24px; }
+
+  .model-list { display: flex; flex-direction: column; gap: 8px; }
+  .model-card {
+    display: flex; gap: 16px; padding: 16px; width: 100%;
+    border: 1px solid var(--c-border); background: #fff;
+    transition: border-color 0.2s ease;
+  }
+  .model-card:hover { border-color: var(--c-border-strong); }
+  .model-thumb { width: 96px; height: 96px; background: #fff; display: flex; align-items: center; justify-content: center; flex: 0 0 96px; }
+  .model-thumb img { width: 80px; mix-blend-mode: multiply; }
+  .model-info { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .model-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .model-top .name { font-size: 20px; font-weight: 700; line-height: 28px; }
+  .model-top .price { font-size: 16px; font-weight: 350; }
+  .rating { display: flex; gap: 8px; align-items: center; font-size: 12px; }
+  .rating img { height: 14px; }
+  .model-desc { font-size: 14px; line-height: 20px; color: var(--c-text-2); }
+
+  /* detail view */
+  .detail { display: flex; flex-direction: column; gap: 24px; }
+  .selected-box { border: 1px solid var(--c-border); padding: 16px; display: flex; flex-direction: column; gap: 8px; width: 100%; transition: border-color 0.2s ease; }
+  .selected-box:hover { border-color: var(--c-border-strong); }
+  .selected-box .tag { font-size: 14px; color: var(--c-text-2); }
+  .selected-box .row { display: flex; justify-content: space-between; align-items: center; }
+  .selected-box .name { font-size: 24px; font-weight: 700; line-height: 24px; }
+  .selected-box .right { display: flex; gap: 16px; align-items: center; font-size: 16px; }
+  .selected-box .chev { transition: transform 0.2s ease; }
+
+  /* selected-box dropdown: menu carries the same strong-border treatment as
+     the box's selected state */
+  .dd { position: relative; }
+  .dd.is-open .selected-box { border-color: var(--c-border-strong); }
+  .dd.is-open .chev { transform: rotate(180deg); }
+  .dd-menu {
+    position: absolute; top: calc(100% - 1px); left: 0; right: 0; z-index: 6;
+    background: #fff; border: 1px solid var(--c-border-strong);
+    opacity: 0; transform: translateY(-6px); visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+  }
+  .dd.is-open .dd-menu { opacity: 1; transform: translateY(0); visibility: visible; }
+  .dd-item {
+    width: 100%; padding: 16px; display: flex; justify-content: space-between; align-items: center;
+    transition: background-color 0.15s ease;
+  }
+  .dd-item:hover { background: var(--c-warm); }
+  .dd-item .name { font-size: 20px; font-weight: 700; line-height: 24px; }
+  .dd-item .price { font-size: 16px; color: var(--c-text); }
+  .dd-item.is-current .name::after {
+    content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--c-accent); margin-left: 10px; vertical-align: middle;
+  }
+
+  .detail-blurb { display: flex; flex-direction: column; gap: 8px; }
+  .detail-blurb p { font-size: 14px; line-height: 20px; color: var(--c-text-2); }
+
+  .opt-label-row { display: flex; gap: 12px; align-items: center; }
+  .opt-label-row .val { font-family: var(--f-mono); font-size: 12px; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 1px; }
+
+  .opt-group { display: flex; flex-direction: column; gap: 12px; }
+  .opt-group-head { display: flex; justify-content: space-between; align-items: center; }
+  .size-chart { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--c-text); }
+  .size-chart img { width: 16px; }
+
+  .btn-row { display: flex; gap: 8px; }
+  .opt-btn {
+    flex: 1; min-height: 48px; padding: 14px 8px;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    border: 1px solid var(--c-border); background: #fff;
+    font-family: var(--f-mono); font-size: 11px; font-weight: 700; letter-spacing: 2.4px; text-transform: uppercase;
+    color: var(--c-text-2); transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .opt-btn:hover { border-color: var(--c-text-2); }
+  .opt-btn.is-selected { border-color: var(--c-border-strong); color: var(--c-text); }
+  .opt-btn--tall { flex-direction: column; line-height: 16px; min-height: 69px; }
+
+  .new-badge { background: var(--c-accent); color: #fff; font-family: var(--f-mono); font-size: 9px; font-weight: 700; letter-spacing: 1px; padding: 4px 6px; border-radius: 4px; }
+
+  .swatch-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .swatch {
+    width: 62px; height: 62px; border: 1px solid var(--c-border); border-radius: 4px;
+    background: #fff; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 0;
+    transition: border-color 0.15s ease;
+  }
+  .swatch img { width: 100%; object-fit: contain; }
+  .swatch:hover { border-color: var(--c-text-2); }
+  .swatch.is-selected { border-color: var(--c-border-strong); }
+
+  /* helmet + extras */
+  .product-head { display: flex; flex-direction: column; gap: 8px; }
+  .product-head .row { display: flex; justify-content: space-between; align-items: flex-end; }
+  .product-head .name { font-size: 24px; font-weight: 700; line-height: 24px; }
+  .product-head .price { font-size: 16px; }
+  .product-head .desc { font-size: 14px; line-height: 20px; color: var(--c-text-2); margin-top: 8px; }
+
+  .rail-step .section-gap { display: flex; flex-direction: column; gap: 40px; }
+
+  /* bundle notification: full-width bar above the price/ATC block */
+  .rail-footer { position: sticky; bottom: 0; z-index: 10; }
+  .helmet-added {
+    display: none; justify-content: space-between; align-items: center; gap: 16px;
+    width: 100%; padding: 14px 24px; background: #fff; border-top: 1px solid var(--c-border);
+    font-size: 13px; color: var(--c-text-2);
+  }
+  .helmet-added.is-on { display: flex; opacity: 1; transition: opacity 0.4s ease; }
+  .helmet-added.is-fading { opacity: 0; }
+  .helmet-added .left { display: flex; gap: 8px; align-items: center; }
+  .helmet-added .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-accent); }
+  .helmet-added button { text-decoration: underline; color: var(--c-text-2); font-size: 13px; }
+
+  .extras-title { font-size: 24px; font-weight: 700; margin-bottom: 16px; }
+  .extra-card {
+    width: 100%; border: 1px solid var(--c-border); padding: 16px;
+    display: flex; flex-direction: column; gap: 8px;
+    transition: border-color 0.2s ease; position: relative;
+  }
+  .extra-card + .extra-card { margin-top: 8px; }
+  .extra-card:hover { border-color: var(--c-text-2); }
+  .extra-card.is-selected { border-color: var(--c-border-strong); }
+  .extra-card .row { display: flex; justify-content: space-between; align-items: flex-start; }
+  .extra-card .name { font-size: 14px; font-weight: 500; line-height: 20px; }
+  .extra-card .price { font-size: 16px; }
+  .extra-card .desc { font-size: 14px; line-height: 20px; color: var(--c-text-2); }
+  .extra-card .add-state { display: inline-flex; align-items: center; font-family: var(--f-mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-2); }
+  .extra-card.is-selected .add-state { color: var(--c-accent); }
+  /* fixed 12x12 leading box for the + / pip so the text never shifts */
+  .extra-card .add-state::before {
+    content: '+'; display: inline-flex; align-items: center; justify-content: center;
+    width: 12px; height: 12px; flex: 0 0 12px; font-size: 12px; letter-spacing: 0;
+  }
+  .extra-card.is-selected .add-state::before {
+    content: '';
+    background: radial-gradient(circle, var(--c-accent) 2px, transparent 2.5px);
+  }
+
+  /* ---- price bar ---- */
+  .price-bar {
+    background: #fff; border-top: 1px solid var(--c-border);
+    padding: 24px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .price-info { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .price-line { display: flex; gap: 8px; align-items: baseline; font-size: 20px; line-height: 28px; }
+  .price-line .compare { text-decoration: line-through; color: var(--c-text); display: none; }
+  .price-line .total { transition: color 0.3s ease; }
+  .price-bar.has-discount .compare { display: inline; }
+  .price-bar.has-discount .total { color: var(--c-accent); }
+  .price-note { font-size: 12px; color: var(--c-text-2); line-height: 16px; }
+  /* Nudge hidden for now — destination TBD. Logic stays wired; restore by
+     reinstating `.price-bar.has-nudge .price-nudge { display: block; }`. */
+  .price-nudge { font-size: 12px; color: var(--c-accent); line-height: 16px; display: none; }
+
+  .atc {
+    flex: 1; height: 56px; background: var(--c-accent); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--f-mono); font-size: 13px; font-weight: 700; letter-spacing: 2.8px; text-transform: uppercase;
+    transition: opacity 0.2s ease;
+  }
+  .atc:hover { opacity: 0.9; }
+
+  /* ---- small screens: desktop prototype notice ---- */
+  .viewport-notice { display: none; }
+  @media (max-width: 1099px) {
+    .builder, .announcement, .nav { display: none; }
+    .viewport-notice { display: flex; min-height: 100vh; align-items: center; justify-content: center; padding: 40px; text-align: center; font-size: 15px; line-height: 1.6; color: var(--c-text-2); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root { --rf-blur: 0px; --rf-out: 0s; --rf-in: 0s; }
+    html { scroll-behavior: auto; }
+    .stage-panel, .stage-img, .stage-copy, .swap-view, .detail-body, .lens-layer { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="viewport-notice">This is a desktop interaction prototype (≥1100px).<br>Mobile is a separate exploration — widen the window to view.</div>
+
+<div class="announcement caption">
+  <span>WINTER 26/27 IS HERE</span>
+  <span class="shop">SHOP NOW</span>
+</div>
+
+<nav class="nav">
+  <div class="nav-links"><span>SHOP+</span><span>PURSUITS+</span><span>ABOUT US+</span></div>
+  <img class="nav-logo" src="assets/logo-glade.svg" alt="Glade">
+  <div class="nav-right">
+    <span class="nav-links">FIND YOUR FRAME+</span>
+    <div class="nav-icons">
+      <img src="assets/icon-account.svg" alt=""><img src="assets/icon-account.svg" alt=""><img src="assets/icon-cart.svg" alt="">
+    </div>
+  </div>
+</nav>
+
+<div class="builder">
+
+  <!-- ================= LEFT: pinned image stage ================= -->
+  <div class="stage-col">
+    <div class="stage" id="stage">
+
+      <!-- panel 0: goggles (lens-swap pair) -->
+      <div class="stage-panel is-active" data-panel="0">
+        <div class="stage-img-wrap">
+          <div class="lens-layer is-active" data-lens="adapt3">
+            <img class="stage-img" src="assets/adapt3-41.png" alt="Adapt 3 goggle">
+            <model-viewer class="stage-3d" data-src="https://cdn.shopify.com/3d/models/09b5a4cda3670980/adapt_3_blue_black_ll.glb" camera-controls touch-action="pan-y" camera-orbit="-41deg 90deg 110%" environment-image="neutral" exposure="1" shadow-intensity="0.6" interaction-prompt="none" alt="Adapt 3 goggle 3D"></model-viewer>
+          </div>
+          <div class="lens-layer" data-lens="adapt3-dark">
+            <img class="stage-img" src="assets/adapt3-ll.png" alt="Adapt 3 goggle, low light lens">
+            <model-viewer class="stage-3d" data-src="https://cdn.shopify.com/3d/models/6c6539984a6766ba/adapt_3_black_black_ll.glb" camera-controls touch-action="pan-y" camera-orbit="-41deg 90deg 110%" environment-image="neutral" exposure="1" shadow-intensity="0.6" interaction-prompt="none" alt="Adapt 3 goggle, dark lens 3D"></model-viewer>
+          </div>
+          <div class="lens-layer" data-lens="f2t">
+            <img class="stage-img" src="assets/f2t-41.png" alt="Fathom 2 goggle, toric lens">
+            <model-viewer class="stage-3d" data-src="https://cdn.shopify.com/3d/models/335494aee717b263/f2t_blue_navy_ll.glb" camera-controls touch-action="pan-y" camera-orbit="-41deg 90deg 110%" environment-image="neutral" exposure="1" shadow-intensity="0.6" interaction-prompt="none" alt="Fathom 2 toric 3D"></model-viewer>
+          </div>
+          <div class="lens-layer" data-lens="f2c">
+            <img class="stage-img" src="assets/f2c-41.png" alt="Fathom 2 goggle, cylindrical lens">
+            <model-viewer class="stage-3d" data-src="https://cdn.shopify.com/3d/models/e3f8816098010552/f2c_bronze_black_ll.glb" camera-controls touch-action="pan-y" camera-orbit="-41deg 90deg 110%" environment-image="neutral" exposure="1" shadow-intensity="0.6" interaction-prompt="none" alt="Fathom 2 cylindrical 3D"></model-viewer>
+          </div>
+          <div class="lens-layer" data-lens="divide">
+            <img class="stage-img" src="assets/divide-41.png" alt="Divide goggle">
+            <model-viewer class="stage-3d" data-src="https://cdn.shopify.com/3d/models/21f89f6cccb50b0f/divide_orange_black_ll.glb" camera-controls touch-action="pan-y" camera-orbit="-41deg 90deg 110%" environment-image="neutral" exposure="1" shadow-intensity="0.6" interaction-prompt="none" alt="Divide goggle 3D"></model-viewer>
+          </div>
+        </div>
+        <p class="stage-copy"><strong>MagFit™ ready.</strong> <span>Reduce the possibility of a “goggle gap”, ensure perfect alignment with the helmet vents to prevent fogging, and prevent vibration and shifting while skiing.</span></p>
+      </div>
+
+      <!-- panel 1: helmet -->
+      <div class="stage-panel" data-panel="1">
+        <div class="stage-img-wrap">
+          <img class="stage-img" src="assets/helmet-boundary.png" alt="Boundary MIPS helmet">
+          <model-viewer class="stage-3d" data-src="https://cdn.shopify.com/3d/models/cc7d20cbf01e6789/boundary-test-import.glb" camera-controls touch-action="pan-y" camera-orbit="-41deg 90deg" environment-image="neutral" exposure="1" shadow-intensity="0.6" interaction-prompt="none" alt="Boundary MIPS helmet 3D"></model-viewer>
+        </div>
+        <p class="stage-copy stage-copy--narrow"><strong>Finally close the gap.</strong> <span>MagFit™ pairs a magnet in the top of your goggle frame with a metal plate in the helmet brim, so the two snap together in one easy motion.</span></p>
+        <img class="stage-mips" src="assets/logo-mips.svg" alt="MIPS">
+      </div>
+
+      <!-- panel 2: extras / lifestyle -->
+      <div class="stage-panel" data-panel="2">
+        <div class="stage-img-wrap"><img class="stage-img stage-img--cover" src="assets/lifestyle.png" alt="Rider wearing the full Glade setup"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= RIGHT: rail ================= -->
+  <div class="rail">
+
+    <div class="step-header" id="stepHeader">
+      <div class="step-tab is-active" data-step="0"><span class="num">1</span><span class="lbl"><span class="select-word">SELECT&nbsp;</span>GOGGLES</span></div>
+      <div class="step-tab" data-step="1"><span class="num">2</span><span class="lbl"><span class="select-word">SELECT&nbsp;</span>HELMET</span></div>
+      <div class="step-tab" data-step="2"><span class="num">3</span><span class="lbl"><span class="select-word">SELECT&nbsp;</span>EXTRAS</span></div>
+    </div>
+
+    <!-- ---- STEP 1: goggles ---- -->
+    <section class="rail-step" data-step-section="0">
+      <div class="step-intro">
+        <p class="h6 eyebrow">GET MOUNTAIN-READY</p>
+        <h2>Pick your goggles, add a helmet and extras, and save 15% on the whole setup.</h2>
+      </div>
+
+      <div class="swap" id="goggleSwap">
+
+        <!-- view: style list -->
+        <div class="swap-view" data-view="list">
+          <div class="model-list">
+            <button class="model-card" data-model="adapt3">
+              <span class="model-thumb"><img src="assets/thumb-adapt3.png" alt=""></span>
+              <span class="model-info">
+                <span class="model-top"><span class="name">Adapt 3</span><span class="price">$169</span></span>
+                <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(1563)</span>
+                <span class="model-desc">Refined semi-frameless design</span>
+              </span>
+            </button>
+            <button class="model-card" data-model="fathom2">
+              <span class="model-thumb"><img src="assets/thumb-fathom2.png" alt=""></span>
+              <span class="model-info">
+                <span class="model-top"><span class="name">Fathom 2</span><span class="price">$239</span></span>
+                <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(734)</span>
+                <span class="model-desc">Our most premium goggle</span>
+              </span>
+            </button>
+            <button class="model-card" data-model="divide">
+              <span class="model-thumb"><img src="assets/thumb-divide.png" alt=""></span>
+              <span class="model-info">
+                <span class="model-top"><span class="name">Divide</span><span class="price">$149</span></span>
+                <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(882)</span>
+                <span class="model-desc">Bold, full-frame styling</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- view: model details — the selector persists, only the body swaps -->
+        <div class="swap-view is-hidden" data-view="detail">
+          <div class="detail">
+            <div class="dd">
+              <button class="selected-box js-dd-toggle">
+                <span class="tag">Selected</span>
+                <span class="row"><span class="name" id="selName">Adapt 3</span><span class="right"><span id="selPrice">$169</span> <svg class="chev" width="14" height="8" viewBox="0 0 14 8" fill="none"><path d="M1 1l6 6 6-6" stroke="#2c2a26" stroke-width="1.5"/></svg></span></span>
+              </button>
+              <div class="dd-menu">
+                <button class="dd-item is-current" data-model="adapt3"><span class="name">Adapt 3</span><span class="price">$169</span></button>
+                <button class="dd-item" data-model="fathom2"><span class="name">Fathom 2</span><span class="price">$239</span></button>
+                <button class="dd-item" data-model="divide"><span class="name">Divide</span><span class="price">$149</span></button>
+              </div>
+            </div>
+            <div class="detail-swap">
+            <div class="detail-body" data-body="adapt3">
+            <div class="detail-blurb">
+              <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(1563)</span>
+              <p>Refined semi-frameless design pairs an expanded field of view with a versatile face form</p>
+            </div>
+            <div class="opt-label-row"><span class="h6">COLOR</span><span class="val js-lens-name">Reveal 4K Blue / Matte Black</span></div>
+            <div class="opt-group">
+              <p class="h6">SIZE</p>
+              <div class="btn-row" data-opts>
+                <button class="opt-btn is-selected">REGULAR</button>
+                <button class="opt-btn">SMALL</button>
+              </div>
+            </div>
+            <div class="opt-group">
+              <p class="h6">NOSE BRIDGE</p>
+              <div class="btn-row" data-opts>
+                <button class="opt-btn is-selected">STANDARD</button>
+                <button class="opt-btn">LOW BRIDGE</button>
+              </div>
+            </div>
+            <div class="opt-group">
+              <div class="opt-label-row"><span class="h6">REVEAL 4K®</span><span class="new-badge">NEW</span></div>
+              <div class="swatch-row js-lens-swatches">
+                <button class="swatch is-selected" data-lens-img="adapt3" data-lens-label="Reveal 4K Blue / Matte Black"><img src="assets/lens-blue-black.png" alt="Blue / Matte Black"></button>
+                <button class="swatch" data-lens-img="adapt3-dark" data-lens-label="Reveal 4K Photochromic / Matte Black"><img src="assets/lens-black-maroon.png" alt="Black / Maroon"></button>
+                <button class="swatch" data-lens-img="adapt3-dark" data-lens-label="Reveal 4K Bronze / Midnight Navy"><img src="assets/lens-bronze-navy.png" alt="Bronze / Midnight Navy"></button>
+                <button class="swatch" data-lens-img="adapt3-dark" data-lens-label="Reveal 4K Black / Black"><img src="assets/lens-black-black.png" alt="Black / Black"></button>
+                <button class="swatch" data-lens-img="adapt3-dark" data-lens-label="Reveal 4K Black / Black"><img src="assets/lens-black-black.png" alt="Black / Black"></button>
+                <button class="swatch" data-lens-img="adapt3-dark" data-lens-label="Reveal 4K Black / Black"><img src="assets/lens-black-black.png" alt="Black / Black"></button>
+              </div>
+            </div>
+            </div>
+            <div class="detail-body is-hidden" data-body="fathom2">
+            <div class="detail-blurb">
+              <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(734)</span>
+              <p>Our most premium goggle’s refined frame delivers an expansive field of view</p>
+            </div>
+            <div class="opt-label-row"><span class="h6">COLOR</span><span class="val">Reveal 4K Bronze / Matte Black</span></div>
+            <div class="opt-group">
+              <p class="h6">LENS SHAPE</p>
+              <div class="btn-row" data-opts>
+                <button class="opt-btn is-selected" data-lens-img="f2t">TORIC</button>
+                <button class="opt-btn" data-lens-img="f2c">CYLINDRICAL</button>
+              </div>
+            </div>
+            <div class="opt-group">
+              <div class="opt-label-row"><span class="h6">REVEAL 4K®</span><span class="new-badge">NEW</span></div>
+              <div class="swatch-row">
+                <button class="swatch is-selected"><img src="assets/lens-blue-black.png" alt=""></button>
+                <button class="swatch"><img src="assets/lens-black-maroon.png" alt=""></button>
+                <button class="swatch"><img src="assets/lens-bronze-navy.png" alt=""></button>
+                <button class="swatch"><img src="assets/lens-black-black.png" alt=""></button>
+              </div>
+            </div>
+            </div>
+            <div class="detail-body is-hidden" data-body="divide">
+            <div class="detail-blurb">
+              <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(882)</span>
+              <p>The Divide brings bold, full-frame styling to Glade’s goggle lineup for the first time.</p>
+            </div>
+            <div class="opt-label-row"><span class="h6">COLOR</span><span class="val">Reveal 4K Blue / Matte Black</span></div>
+            <div class="opt-group">
+              <div class="opt-label-row"><span class="h6">REVEAL 4K®</span><span class="new-badge">NEW</span></div>
+              <div class="swatch-row">
+                <button class="swatch is-selected"><img src="assets/lens-blue-black.png" alt=""></button>
+                <button class="swatch"><img src="assets/lens-black-maroon.png" alt=""></button>
+                <button class="swatch"><img src="assets/lens-bronze-navy.png" alt=""></button>
+                <button class="swatch"><img src="assets/lens-black-black.png" alt=""></button>
+              </div>
+            </div>
+            </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ---- STEP 2: helmet ---- -->
+    <section class="rail-step" data-step-section="1">
+      <div class="section-gap">
+        <div class="product-head">
+          <div class="row"><span class="name">Boundary MIPS</span><span class="price">$199</span></div>
+          <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(262)</span>
+          <p class="desc">The Boundary MIPS takes our best-selling premium helmet and integrates it into the MagFit™ System.</p>
+        </div>
+
+        <div class="opt-label-row"><span class="h6">COLOR</span><span class="val js-helmet-color">Matte Coal</span></div>
+
+        <div class="opt-group">
+          <div class="opt-group-head">
+            <p class="h6">HELMET SIZE</p>
+            <span class="size-chart"><img src="assets/icon-ruler.svg" alt="">Size Chart</span>
+          </div>
+          <div class="btn-row js-helmet-size">
+            <button class="opt-btn opt-btn--tall" data-size="large">LARGE<br>(59-63CM)</button>
+            <button class="opt-btn opt-btn--tall" data-size="medium">MEDIUM<br>(55-59CM)</button>
+            <button class="opt-btn opt-btn--tall" data-size="small">SMALL<br>(51-55CM)</button>
+          </div>
+        </div>
+
+        <div class="opt-group">
+          <p class="h6">HELMET COLOR</p>
+          <div class="swatch-row js-helmet-swatches">
+            <button class="swatch" data-color="Matte Black"><img src="assets/helmet-sw-1.png" alt="Matte Black"></button>
+            <button class="swatch" data-color="Matte Slate"><img src="assets/helmet-sw-2.png" alt="Matte Slate"></button>
+            <button class="swatch" data-color="Matte Navy"><img src="assets/helmet-sw-3.png" alt="Matte Navy"></button>
+            <button class="swatch is-selected" data-color="Matte Coal"><img src="assets/helmet-sw-4.png" alt="Matte Coal"></button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ---- STEP 3: extras ---- -->
+    <section class="rail-step" data-step-section="2">
+      <p class="extras-title">Round out your setup</p>
+      <div class="js-extras">
+        <button class="extra-card" data-extra="balaclava" data-price="39">
+          <span class="row"><span class="name">Elevated Balaclava</span><span class="price">$39</span></span>
+          <span class="rating"><img src="assets/star-1.svg" alt="">4.8</span>
+          <span class="desc">Perfectly weighted, buttery-soft, and full protection from the sun and cold; this balaclava is a core piece of our kit.</span>
+          <span class="add-state js-add-state">Add to bundle</span>
+        </button>
+        <button class="extra-card" data-extra="necktube" data-price="29">
+          <span class="row"><span class="name">Classic Neck Tube</span><span class="price">$29</span></span>
+          <span class="rating"><img src="assets/star-1.svg" alt="">4.8</span>
+          <span class="desc">The Neck Tube adds warmth and coverage without the full-head fit of a balaclava. Soft, comfortable, and easy to stash in a pocket.</span>
+          <span class="add-state js-add-state">Add to bundle</span>
+        </button>
+        <button class="extra-card" data-extra="case" data-price="25">
+          <span class="row"><span class="name">Goggle Case</span><span class="price">$25</span></span>
+          <span class="rating"><img src="assets/star-1.svg" alt="">4.8</span>
+          <span class="desc">Protect your investment with this tough, crush-resistant, and ventilated protective case.</span>
+          <span class="add-state js-add-state">Add to bundle</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ---- sticky footer: bundle notification + price bar ---- -->
+    <div class="rail-footer">
+    <div class="helmet-added js-helmet-added">
+      <span class="left"><span class="dot"></span><span>Boundary MIPS added to your bundle</span></span>
+      <button class="js-helmet-remove" type="button">Remove</button>
+    </div>
+    <div class="price-bar" id="priceBar">
+      <div class="price-info">
+        <div class="price-line" id="priceLine">
+          <span class="compare" id="comparePrice">$407</span>
+          <span class="total" id="totalPrice">$169</span>
+        </div>
+        <p class="price-note">+ shipping</p>
+        <p class="price-nudge" id="priceNudge">Add a helmet + accessory to save 15%</p>
+      </div>
+      <button class="atc">Add to Cart</button>
+    </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var PRICES = { adapt3: 169, fathom2: 239, divide: 149, helmet: 199 };
+  var MODEL_LENS = { adapt3: 'adapt3', fathom2: 'f2t', divide: 'divide' };
+  var state = { goggle: 'adapt3', helmet: false, extras: {}, activePanel: 0 };
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ============ rack focus stage ============ */
+  var stage = document.getElementById('stage');
+  var panels = Array.prototype.slice.call(stage.querySelectorAll('.stage-panel'));
+
+  // Gate blur behind first paint so the LCP image doesn't render soft.
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () { stage.classList.add('is-ready'); });
+  });
+
+  // Kick off the default goggle's 3D model once the page is settled.
+  window.addEventListener('load', function () {
+    var active = document.querySelector('.lens-layer.is-active');
+    if (active) ensureModel(active);
+  });
+
+  var transitionTimer = null;
+  function setActivePanel(i) {
+    if (i === state.activePanel) return;
+    var prev = state.activePanel;
+    state.activePanel = i;
+    stage.classList.add('is-transitioning');
+    panels.forEach(function (p, idx) {
+      p.classList.toggle('is-active', idx === i);
+      p.classList.toggle('is-leaving', idx === prev);
+    });
+    clearTimeout(transitionTimer);
+    transitionTimer = setTimeout(function () {
+      stage.classList.remove('is-transitioning');
+      panels.forEach(function (p) { p.classList.remove('is-leaving'); });
+    }, 950);
+    if (i === 1) ensureModel(panels[1].querySelector('.stage-img-wrap'));
+    syncStepHeader(i);
+  }
+
+  /* ============ scrollspy ============ */
+  var sections = Array.prototype.slice.call(document.querySelectorAll('[data-step-section]'));
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        setActivePanel(parseInt(entry.target.getAttribute('data-step-section'), 10));
+      }
+    });
+  }, { rootMargin: '-45% 0px -45% 0px' });
+  sections.forEach(function (s) { observer.observe(s); });
+
+  /* ============ step header ============ */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.step-tab'));
+  function syncStepHeader(active) {
+    tabs.forEach(function (t, i) {
+      t.classList.toggle('is-active', i === active);
+      var done = i < active || (i === 0 && state.goggleConfirmed && active !== 0) ;
+      t.classList.toggle('is-done', i !== active && (i < active || (i === 0 && state.goggleConfirmed) || (i === 1 && state.helmet) || (i === 2 && Object.keys(state.extras).length > 0)));
+    });
+  }
+  tabs.forEach(function (t, i) {
+    t.style.cursor = 'pointer';
+    t.addEventListener('click', function () {
+      sections[i].scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    });
+  });
+
+  /* ============ step 1: in-place rail swap ============ */
+  var swapRoot = document.getElementById('goggleSwap');
+  var views = {};
+  Array.prototype.slice.call(swapRoot.querySelectorAll('.swap-view')).forEach(function (v) {
+    views[v.getAttribute('data-view')] = v;
+  });
+  var currentView = 'list';
+  var swapping = false;
+
+  function swapTo(name) {
+    if (swapping || name === currentView) return;
+    swapping = true;
+    var out = views[currentView];
+    var inn = views[name];
+    out.classList.add('is-leaving');
+    setTimeout(function () {
+      out.classList.add('is-hidden');
+      out.classList.remove('is-leaving');
+      inn.classList.add('is-entering');
+      inn.classList.remove('is-hidden');
+      // force layout so the enter transition runs
+      void inn.offsetHeight;
+      inn.classList.remove('is-entering');
+      currentView = name;
+      swapping = false;
+    }, reduceMotion ? 0 : 300);
+  }
+
+  /* detail bodies: the selector persists, only the body content swaps */
+  var MODEL_META = { adapt3: { name: 'Adapt 3', price: '$169' }, fathom2: { name: 'Fathom 2', price: '$239' }, divide: { name: 'Divide', price: '$149' } };
+  var selName = document.getElementById('selName');
+  var selPrice = document.getElementById('selPrice');
+  var bodies = {};
+  Array.prototype.slice.call(swapRoot.querySelectorAll('.detail-body')).forEach(function (b) {
+    bodies[b.getAttribute('data-body')] = b;
+  });
+  var currentBody = 'adapt3';
+  var bodySwapping = false;
+
+  function setSelector(model) {
+    selName.textContent = MODEL_META[model].name;
+    selPrice.textContent = MODEL_META[model].price;
+    Array.prototype.slice.call(document.querySelectorAll('.dd-item')).forEach(function (it) {
+      it.classList.toggle('is-current', it.getAttribute('data-model') === model);
+    });
+  }
+  function showBody(model) {
+    Object.keys(bodies).forEach(function (k) { bodies[k].classList.toggle('is-hidden', k !== model); });
+    currentBody = model;
+  }
+  function swapBody(model) {
+    if (bodySwapping || model === currentBody) return;
+    var out = bodies[currentBody];
+    var inn = bodies[model];
+    bodySwapping = true;
+    out.classList.add('is-leaving');
+    setTimeout(function () {
+      out.classList.add('is-hidden');
+      out.classList.remove('is-leaving');
+      inn.classList.add('is-entering');
+      inn.classList.remove('is-hidden');
+      void inn.offsetHeight;
+      inn.classList.remove('is-entering');
+      currentBody = model;
+      bodySwapping = false;
+    }, reduceMotion ? 0 : 300);
+  }
+
+  Array.prototype.slice.call(document.querySelectorAll('.model-card')).forEach(function (card) {
+    card.addEventListener('click', function () {
+      var model = card.getAttribute('data-model');
+      state.goggle = model;
+      state.goggleConfirmed = true;
+      setSelector(model);
+      showBody(model);
+      swapTo('detail');
+      setLens(MODEL_LENS[model], null);
+      syncStepHeader(state.activePanel);
+      updatePrice();
+    });
+  });
+
+  /* selected-box dropdown: switch models in place */
+  function closeDropdowns() {
+    Array.prototype.slice.call(document.querySelectorAll('.dd.is-open')).forEach(function (d) {
+      d.classList.remove('is-open');
+    });
+  }
+  Array.prototype.slice.call(document.querySelectorAll('.js-dd-toggle')).forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var dd = btn.parentNode;
+      var open = dd.classList.contains('is-open');
+      closeDropdowns();
+      if (!open) dd.classList.add('is-open');
+    });
+  });
+  Array.prototype.slice.call(document.querySelectorAll('.dd-item')).forEach(function (item) {
+    item.addEventListener('click', function (e) {
+      e.stopPropagation();
+      closeDropdowns();
+      var model = item.getAttribute('data-model');
+      if (model === state.goggle) return;
+      state.goggle = model;
+      setSelector(model);
+      swapBody(model);
+      setLens(MODEL_LENS[model], null);
+      syncStepHeader(state.activePanel);
+      updatePrice();
+    });
+  });
+  document.addEventListener('click', closeDropdowns);
+
+  /* ============ lens swap on the hero (rack focus) ============ */
+  var lensLayers = Array.prototype.slice.call(document.querySelectorAll('.lens-layer'));
+  var lensNameEl = document.querySelector('.js-lens-name');
+
+  /* 3D models load on first activation (GLBs are ~13MB each — don't fetch all
+     up front). The poster image stays until the model's load event fires. */
+  var noGlb = new URLSearchParams(location.search).get('noglb') === '1';
+  function ensureModel(container) {
+    if (!container || noGlb) return;
+    var mv = container.querySelector('model-viewer');
+    if (!mv || mv.getAttribute('src')) return;
+    mv.addEventListener('load', function () { container.classList.add('has-model'); }, { once: true });
+    mv.setAttribute('src', mv.getAttribute('data-src'));
+  }
+
+  function setLens(key, label) {
+    lensLayers.forEach(function (l) {
+      var active = l.getAttribute('data-lens') === key;
+      l.classList.toggle('is-active', active);
+      if (active) ensureModel(l);
+    });
+    if (label && lensNameEl) lensNameEl.textContent = label;
+  }
+  Array.prototype.slice.call(document.querySelectorAll('.js-lens-swatches .swatch')).forEach(function (sw) {
+    sw.addEventListener('click', function () {
+      selectWithin(sw);
+      setLens(sw.getAttribute('data-lens-img'), sw.getAttribute('data-lens-label'));
+    });
+  });
+
+  /* ============ generic option buttons ============ */
+  function selectWithin(el) {
+    Array.prototype.slice.call(el.parentNode.children).forEach(function (sib) {
+      sib.classList.toggle('is-selected', sib === el);
+    });
+  }
+  Array.prototype.slice.call(document.querySelectorAll('[data-opts] .opt-btn')).forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      selectWithin(btn);
+      var lens = btn.getAttribute('data-lens-img');
+      if (lens) setLens(lens, null);
+    });
+  });
+
+  /* ============ step 2: helmet ============ */
+  var helmetAdded = document.querySelector('.js-helmet-added');
+  var noteTimer = null, noteFadeTimer = null;
+  function showHelmetNote() {
+    clearTimeout(noteTimer); clearTimeout(noteFadeTimer);
+    helmetAdded.classList.remove('is-fading');
+    helmetAdded.classList.add('is-on');
+    noteTimer = setTimeout(function () {
+      helmetAdded.classList.add('is-fading');
+      noteFadeTimer = setTimeout(function () {
+        helmetAdded.classList.remove('is-on', 'is-fading');
+      }, 450);
+    }, 8000);
+  }
+  function hideHelmetNote() {
+    clearTimeout(noteTimer); clearTimeout(noteFadeTimer);
+    helmetAdded.classList.remove('is-on', 'is-fading');
+  }
+  Array.prototype.slice.call(document.querySelectorAll('.js-helmet-size .opt-btn')).forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      selectWithin(btn);
+      if (!state.helmet) {
+        state.helmet = true;
+        showHelmetNote();
+        syncStepHeader(state.activePanel);
+        updatePrice();
+      }
+    });
+  });
+  document.querySelector('.js-helmet-remove').addEventListener('click', function (e) {
+    e.stopPropagation();
+    state.helmet = false;
+    hideHelmetNote();
+    Array.prototype.slice.call(document.querySelectorAll('.js-helmet-size .opt-btn')).forEach(function (b) { b.classList.remove('is-selected'); });
+    syncStepHeader(state.activePanel);
+    updatePrice();
+  });
+  var helmetColorEl = document.querySelector('.js-helmet-color');
+  Array.prototype.slice.call(document.querySelectorAll('.js-helmet-swatches .swatch')).forEach(function (sw) {
+    sw.addEventListener('click', function () {
+      selectWithin(sw);
+      helmetColorEl.textContent = sw.getAttribute('data-color');
+    });
+  });
+
+  /* ============ step 3: extras ============ */
+  Array.prototype.slice.call(document.querySelectorAll('.extra-card')).forEach(function (card) {
+    card.addEventListener('click', function () {
+      var key = card.getAttribute('data-extra');
+      var price = parseInt(card.getAttribute('data-price'), 10);
+      var on = !state.extras[key];
+      if (on) state.extras[key] = price; else delete state.extras[key];
+      card.classList.toggle('is-selected', on);
+      card.querySelector('.js-add-state').textContent = on ? 'In your bundle' : 'Add to bundle';
+      syncStepHeader(state.activePanel);
+      updatePrice();
+    });
+  });
+
+  /* ============ price bar ============ */
+  var priceBar = document.getElementById('priceBar');
+  var priceLine = document.getElementById('priceLine');
+  var totalEl = document.getElementById('totalPrice');
+  var compareEl = document.getElementById('comparePrice');
+  var nudgeEl = document.getElementById('priceNudge');
+  var displayedTotal = PRICES[state.goggle];
+
+  function bundleSubtotal() {
+    var sum = PRICES[state.goggle];
+    if (state.helmet) sum += PRICES.helmet;
+    Object.keys(state.extras).forEach(function (k) { sum += state.extras[k]; });
+    return sum;
+  }
+
+  function updatePrice() {
+    var subtotal = bundleSubtotal();
+    var extrasCount = Object.keys(state.extras).length;
+    // Live rule: 15% requires goggle + helmet + eligible accessory (all three).
+    var discounted = state.helmet && extrasCount > 0;
+    var target = discounted ? subtotal * 0.85 : subtotal;
+
+    priceBar.classList.toggle('has-discount', discounted);
+    compareEl.textContent = '$' + subtotal;
+
+    var missing = [];
+    if (!state.helmet) missing.push('a helmet');
+    if (extrasCount === 0) missing.push(state.helmet ? 'an accessory' : 'accessory');
+    priceBar.classList.toggle('has-nudge', !discounted);
+    if (!discounted) nudgeEl.textContent = 'Add ' + missing.join(' + ') + ' to save 15%';
+
+    animateTotal(target);
+  }
+
+  function formatMoney(v) {
+    return Number.isInteger(Math.round(v * 100) / 100) && v % 1 === 0 ? '$' + v : '$' + v.toFixed(2);
+  }
+
+  var rafId = null;
+  function animateTotal(target) {
+    if (reduceMotion) { displayedTotal = target; totalEl.textContent = formatMoney(target); return; }
+    cancelAnimationFrame(rafId);
+    var from = displayedTotal, start = null, dur = 400;
+    function frame(ts) {
+      if (!start) start = ts;
+      var t = Math.min((ts - start) / dur, 1);
+      var eased = 1 - Math.pow(1 - t, 3);
+      var val = from + (target - from) * eased;
+      // Whole dollars while counting; exact value (incl. cents) only lands at the end.
+      totalEl.textContent = t === 1 ? formatMoney(target) : '$' + Math.round(val);
+      if (t < 1) rafId = requestAnimationFrame(frame);
+      else displayedTotal = target;
+    }
+    rafId = requestAnimationFrame(frame);
+  }
+
+  updatePrice();
+
+  /* ============ screenshot presets ============ */
+  var preset = new URLSearchParams(location.search).get('preset');
+  if (preset === 'detail' || preset === 'bundle') {
+    document.querySelector('.model-card[data-model="adapt3"]').click();
+  }
+  if (new URLSearchParams(location.search).get('debug') === 'hit') {
+    setTimeout(function () {
+      var layer = document.querySelector('.lens-layer.is-active');
+      if (layer) layer.classList.add('has-model');
+      var r = document.getElementById('stage').getBoundingClientRect();
+      var el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      var cls = el && (typeof el.className === 'string' ? el.className : el.getAttribute('class'));
+      var pe = el ? getComputedStyle(el).pointerEvents : '?';
+      var d = document.createElement('div');
+      d.style.cssText = 'position:fixed;top:0;left:0;z-index:9999;background:#000;color:#0f0;font:13px monospace;padding:12px;max-width:1200px;white-space:pre-wrap';
+      var hitLayer = el && el.closest ? el.closest('.lens-layer') : null;
+      var lines = ['HIT: <' + (el ? el.tagName : 'null') + '> class="' + cls + '" pe=' + pe + ' layer=' + (hitLayer ? hitLayer.getAttribute('data-lens') : 'n/a')];
+      Array.prototype.slice.call(document.querySelectorAll('.lens-layer')).forEach(function (l) {
+        var mv = l.querySelector('model-viewer');
+        lines.push(l.getAttribute('data-lens') + ': layerClass=[' + l.className + '] layerPE=' + getComputedStyle(l).pointerEvents + ' mvPE=' + (mv ? getComputedStyle(mv).pointerEvents : '-') + ' mvSrc=' + (mv && mv.getAttribute('src') ? 'y' : 'n'));
+      });
+      var p0 = document.querySelector('.stage-panel');
+      lines.push('panel0 class=[' + p0.className + '] PE=' + getComputedStyle(p0).pointerEvents);
+      d.textContent = lines.join('\n');
+      document.body.appendChild(d);
+    }, 1500);
+  }
+  if (new URLSearchParams(location.search).get('scroll') === 'end') {
+    setTimeout(function () { window.scrollTo(0, document.body.scrollHeight); }, 300);
+  }
+  if (new URLSearchParams(location.search).get('dd') === 'open') {
+    setTimeout(function () {
+      var v = views[state.goggle] || views.adapt3;
+      var dd = v.querySelector('.dd');
+      if (dd) dd.classList.add('is-open');
+    }, 600);
+  }
+  if (preset === 'bundle') {
+    document.querySelector('.js-helmet-size .opt-btn[data-size="medium"]').click();
+    document.querySelector('.extra-card[data-extra="balaclava"]').click();
+  }
+})();
+</script>
+</body>
+</html>
