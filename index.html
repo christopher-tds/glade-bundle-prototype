@@ -187,9 +187,10 @@
      the sticky header (~73px tall), so their padding adds its height. */
   .rail-step { min-height: 100vh; display: flex; flex-direction: column; justify-content: flex-start; padding: 113px 24px 40px; }
   .rail-step[data-step-section="0"] { padding-top: 40px; }
-  /* last step doesn't need to fill the viewport — its 40px bottom padding
-     sets the gap to the price block */
-  .rail-step[data-step-section="2"] { min-height: 0; }
+  /* last step fills the viewport and centers its content between the sticky
+     step header (~73px) and the price block (~105px), so "Round out your
+     setup" resolves mid-rail instead of hugging the price bar */
+  .rail-step[data-step-section="2"] { min-height: calc(100vh - 105px); justify-content: center; padding-bottom: 40px; }
 
   .eyebrow { margin-bottom: 8px; color: var(--c-text); }
   .step-intro { margin-bottom: 48px; }
@@ -261,7 +262,26 @@
   .opt-label-row { display: flex; gap: 12px; align-items: center; }
   .opt-label-row .val { font-family: var(--f-mono); font-size: 12px; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 1px; }
 
-  .opt-group { display: flex; flex-direction: column; gap: 12px; }
+  .opt-group { display: flex; flex-direction: column; gap: 12px; position: relative; }
+  .opt-label { display: flex; gap: 8px; align-items: center; }
+
+  /* tooltip: PLP-redesign pattern — ⓘ beside the label opens an info panel */
+  .tip-btn {
+    width: 16px; height: 16px; border: 1px solid var(--c-text-2); border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center; flex: 0 0 16px;
+    font-family: var(--f-body); font-size: 11px; line-height: 1; color: var(--c-text-2);
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .tip-btn:hover { border-color: var(--c-text); color: var(--c-text); }
+  .tip-pop {
+    position: absolute; left: 0; right: 0; top: calc(100% + 8px); z-index: 30;
+    background: #fff; border: 1px solid var(--c-border-strong); padding: 16px;
+    display: none;
+  }
+  .tip-pop.is-open { display: block; }
+  .tip-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .tip-close { font-size: 16px; line-height: 1; color: var(--c-text); padding: 2px; }
+  .tip-body { font-size: 14px; line-height: 20px; color: var(--c-text-2); }
   .opt-group-head { display: flex; justify-content: space-between; align-items: center; }
   .size-chart { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--c-text); }
   .size-chart img { width: 16px; }
@@ -516,14 +536,22 @@
             </div>
             <div class="opt-label-row"><span class="h6">COLOR</span><span class="val js-lens-name">Reveal 4K Blue / Matte Black</span></div>
             <div class="opt-group">
-              <p class="h6">SIZE</p>
+              <div class="opt-label"><p class="h6">SIZE</p><button class="tip-btn js-tip" type="button" aria-label="About face size">i</button></div>
+              <div class="tip-pop">
+                <div class="tip-head"><span class="h6">FACE SIZE</span><button class="tip-close js-tip-close" type="button" aria-label="Close">&times;</button></div>
+                <p class="tip-body">The Adapt 3 comes in two fits. The standard frame is sized for medium to large faces, and the Adapt S is built for smaller faces. Same lens, same features, just a better seal for your face.</p>
+              </div>
               <div class="btn-row" data-opts>
                 <button class="opt-btn is-selected">REGULAR</button>
                 <button class="opt-btn">SMALL</button>
               </div>
             </div>
             <div class="opt-group">
-              <p class="h6">NOSE BRIDGE</p>
+              <div class="opt-label"><p class="h6">NOSE BRIDGE</p><button class="tip-btn js-tip" type="button" aria-label="About nose bridge">i</button></div>
+              <div class="tip-pop">
+                <div class="tip-head"><span class="h6">NOSE BRIDGE</span><button class="tip-close js-tip-close" type="button" aria-label="Close">&times;</button></div>
+                <p class="tip-body">The Low Bridge fit adds extra foam at the nose and adjusts the frame angle for faces with lower nose bridges and higher cheekbones — no goggle gap, no slipping.</p>
+              </div>
               <div class="btn-row" data-opts>
                 <button class="opt-btn is-selected">STANDARD</button>
                 <button class="opt-btn">LOW BRIDGE</button>
@@ -548,7 +576,11 @@
             </div>
             <div class="opt-label-row"><span class="h6">COLOR</span><span class="val">Reveal 4K Bronze / Matte Black</span></div>
             <div class="opt-group">
-              <p class="h6">LENS SHAPE</p>
+              <div class="opt-label"><p class="h6">LENS SHAPE</p><button class="tip-btn js-tip" type="button" aria-label="About lens shape">i</button></div>
+              <div class="tip-pop">
+                <div class="tip-head"><span class="h6">LENS SHAPE</span><button class="tip-close js-tip-close" type="button" aria-label="Close">&times;</button></div>
+                <p class="tip-body">Toric lenses curve on two axes for a wider field of view with less distortion at the edges. Cylindrical lenses curve horizontally only for a classic, low-profile look.</p>
+              </div>
               <div class="btn-row" data-opts>
                 <button class="opt-btn is-selected" data-lens-img="f2t">TORIC</button>
                 <button class="opt-btn" data-lens-img="f2c">CYLINDRICAL</button>
@@ -650,6 +682,9 @@
 
     <!-- ---- sticky footer: bundle notification + price bar ---- -->
     <div class="rail-footer">
+    <div class="helmet-added js-goggle-added">
+      <span class="left"><span class="dot"></span><span class="js-goggle-added-text">Adapt 3 added to your bundle</span></span>
+    </div>
     <div class="helmet-added js-helmet-added">
       <span class="left"><span class="dot"></span><span>Boundary MIPS added to your bundle</span></span>
       <button class="js-helmet-remove" type="button">Remove</button>
@@ -818,6 +853,7 @@
       showBody(model);
       swapTo('detail');
       setLens(MODEL_LENS[model], null);
+      showGoggleNote(model);
       syncStepHeader(state.activePanel);
       updatePrice();
     });
@@ -848,11 +884,33 @@
       setSelector(model);
       swapBody(model);
       setLens(MODEL_LENS[model], null);
+      showGoggleNote(model);
       syncStepHeader(state.activePanel);
       updatePrice();
     });
   });
   document.addEventListener('click', closeDropdowns);
+
+  /* tooltips */
+  function closeTips() {
+    Array.prototype.slice.call(document.querySelectorAll('.tip-pop.is-open')).forEach(function (p) { p.classList.remove('is-open'); });
+  }
+  Array.prototype.slice.call(document.querySelectorAll('.js-tip')).forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var pop = btn.closest('.opt-group').querySelector('.tip-pop');
+      var open = pop.classList.contains('is-open');
+      closeTips();
+      if (!open) pop.classList.add('is-open');
+    });
+  });
+  Array.prototype.slice.call(document.querySelectorAll('.js-tip-close')).forEach(function (btn) {
+    btn.addEventListener('click', function (e) { e.stopPropagation(); closeTips(); });
+  });
+  Array.prototype.slice.call(document.querySelectorAll('.tip-pop')).forEach(function (pop) {
+    pop.addEventListener('click', function (e) { e.stopPropagation(); });
+  });
+  document.addEventListener('click', closeTips);
 
   /* ============ lens swap on the hero (rack focus) ============ */
   var lensLayers = Array.prototype.slice.call(document.querySelectorAll('.lens-layer'));
@@ -900,21 +958,29 @@
 
   /* ============ step 2: helmet ============ */
   var helmetAdded = document.querySelector('.js-helmet-added');
-  var noteTimer = null, noteFadeTimer = null;
-  function showHelmetNote() {
-    clearTimeout(noteTimer); clearTimeout(noteFadeTimer);
-    helmetAdded.classList.remove('is-fading');
-    helmetAdded.classList.add('is-on');
-    noteTimer = setTimeout(function () {
-      helmetAdded.classList.add('is-fading');
-      noteFadeTimer = setTimeout(function () {
-        helmetAdded.classList.remove('is-on', 'is-fading');
-      }, 450);
+  var goggleAdded = document.querySelector('.js-goggle-added');
+  var noteTimers = new Map();
+  function showNote(el) {
+    var t = noteTimers.get(el) || {};
+    clearTimeout(t.hold); clearTimeout(t.fade);
+    el.classList.remove('is-fading');
+    el.classList.add('is-on');
+    t.hold = setTimeout(function () {
+      el.classList.add('is-fading');
+      t.fade = setTimeout(function () { el.classList.remove('is-on', 'is-fading'); }, 450);
     }, 8000);
+    noteTimers.set(el, t);
   }
-  function hideHelmetNote() {
-    clearTimeout(noteTimer); clearTimeout(noteFadeTimer);
-    helmetAdded.classList.remove('is-on', 'is-fading');
+  function hideNote(el) {
+    var t = noteTimers.get(el) || {};
+    clearTimeout(t.hold); clearTimeout(t.fade);
+    el.classList.remove('is-on', 'is-fading');
+  }
+  function showHelmetNote() { showNote(helmetAdded); }
+  function hideHelmetNote() { hideNote(helmetAdded); }
+  function showGoggleNote(model) {
+    goggleAdded.querySelector('.js-goggle-added-text').textContent = MODEL_META[model].name + ' added to your bundle';
+    showNote(goggleAdded);
   }
   Array.prototype.slice.call(document.querySelectorAll('.js-helmet-size .opt-btn')).forEach(function (btn) {
     btn.addEventListener('click', function () {
