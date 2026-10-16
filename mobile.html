@@ -32,7 +32,7 @@
     --rf-out: 0.5s;
     --rf-in: 0.9s;
     --stage-h: min(440px, 52svh);
-    --header-h: 49px;
+    --header-h: 41px;
     --footer-h: 105px;
   }
   @supports not (height: 1svh) { :root { --stage-h: min(440px, 52vh); } }
@@ -100,15 +100,13 @@
   .step-header {
     position: sticky; top: var(--stage-h); z-index: 6;
     display: flex; gap: 24px; align-items: center;
-    padding: 12px 24px; background: #fff; border-bottom: 1px solid var(--c-border);
+    padding: 12px 24px 13px; background: #fff; border-bottom: 1px solid var(--c-border);
   }
-  .step-tab { display: flex; gap: 16px; align-items: center; }
-  .step-tab .num { display: none; width: 24px; height: 24px; align-items: center; justify-content: center; background: var(--c-accent); color: #fff; font-family: var(--f-mono); font-size: 12px; font-weight: 700; }
-  .step-tab .lbl { font-family: var(--f-mono); font-size: 12px; font-weight: 700; letter-spacing: 3.6px; text-transform: uppercase; color: var(--c-border); transition: color 0.25s ease; }
-  .step-tab .lbl .select-word { display: none; }
+  .step-tab { display: flex; gap: 12px; align-items: center; }
+  .step-tab .num { display: none; width: 16px; height: 16px; align-items: center; justify-content: center; background: var(--c-accent); color: #fff; font-family: var(--f-mono); font-size: 12px; font-weight: 700; }
+  .step-tab .lbl { font-family: var(--f-mono); font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--c-border); transition: color 0.25s ease; }
   .step-tab.is-active .num { display: flex; }
   .step-tab.is-active .lbl { color: var(--c-accent); }
-  .step-tab.is-active .lbl .select-word { display: inline; }
   .step-tab.is-done .lbl { color: var(--c-text-2); }
 
   /* ============ sections ============ */
@@ -221,15 +219,17 @@
   .bundle-note .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-accent); }
   .bundle-note button { text-decoration: underline; color: var(--c-text-2); font-size: 12px; }
 
-  .price-bar { background: #fff; border-top: 1px solid var(--c-border); padding: 24px 24px calc(24px + env(safe-area-inset-bottom)); display: flex; gap: 12px; align-items: flex-start; }
+  /* price bar reveals only once the shopper reaches the bottom of the rail —
+     not enough mobile real estate to pin it throughout */
+  .price-bar { background: #fff; border-top: 1px solid var(--c-border); padding: 24px 24px calc(24px + env(safe-area-inset-bottom)); display: none; gap: 12px; align-items: flex-start; }
+  .rail-footer.at-end .price-bar { display: flex; }
   .price-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
   .price-line { display: flex; gap: 8px; align-items: baseline; font-size: 20px; line-height: 28px; }
   .price-line .compare { text-decoration: line-through; display: none; }
   .price-bar.has-discount .compare { display: inline; }
   .price-bar.has-discount .total { color: var(--c-accent); }
   .price-note { font-size: 12px; line-height: 16px; color: var(--c-text-2); }
-  .price-nudge { font-size: 11px; line-height: 14px; color: var(--c-accent); display: none; }
-  .price-bar.has-nudge .price-nudge { display: block; }
+  .price-nudge { display: none; }
   .atc { flex: 0 0 173px; height: 56px; background: var(--c-accent); color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--f-mono); font-size: 12px; font-weight: 700; letter-spacing: 2.4px; text-transform: uppercase; }
 
   @media (prefers-reduced-motion: reduce) {
@@ -292,9 +292,9 @@
 </div>
 
 <div class="step-header" id="stepHeader">
-  <div class="step-tab is-active" data-step="0"><span class="num">1</span><span class="lbl"><span class="select-word">SELECT&nbsp;</span>GOGGLES</span></div>
-  <div class="step-tab" data-step="1"><span class="num">2</span><span class="lbl"><span class="select-word">SELECT&nbsp;</span>HELMET</span></div>
-  <div class="step-tab" data-step="2"><span class="num">3</span><span class="lbl"><span class="select-word">SELECT&nbsp;</span>EXTRAS</span></div>
+  <div class="step-tab is-active" data-step="0"><span class="num">1</span><span class="lbl">GOGGLES</span></div>
+  <div class="step-tab" data-step="1"><span class="num">2</span><span class="lbl">HELMET</span></div>
+  <div class="step-tab" data-step="2"><span class="num">3</span><span class="lbl">EXTRAS</span></div>
 </div>
 
 <!-- ---- STEP 1: goggles ---- -->
@@ -479,6 +479,7 @@
     </button>
   </div>
 </section>
+<div id="railEnd" aria-hidden="true"></div>
 
 <!-- tooltip bottom sheets -->
 <div class="tip-scrim js-tip-scrim"></div>
@@ -853,6 +854,15 @@
     rafId = requestAnimationFrame(frame);
   }
   updatePrice();
+
+  /* reveal the price bar at the end of the rail */
+  var railFooter = document.querySelector('.rail-footer');
+  var endSentinel = document.getElementById('railEnd');
+  new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      railFooter.classList.toggle('at-end', entry.isIntersecting);
+    });
+  }, { rootMargin: '0px 0px 80px 0px' }).observe(endSentinel);
 
   /* ===== screenshot presets ===== */
   var params = new URLSearchParams(location.search);

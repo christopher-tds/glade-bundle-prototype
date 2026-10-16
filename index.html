@@ -167,7 +167,7 @@
 
   .step-header {
     position: sticky; top: 0; z-index: 10;
-    display: flex; gap: 32px; align-items: center;
+    display: flex; gap: 24px; align-items: center;
     padding: 24px; background: #fff; border-bottom: 1px solid var(--c-border);
   }
   .step-tab { display: flex; gap: 16px; align-items: center; }
@@ -177,10 +177,8 @@
     font-family: var(--f-mono); font-size: 12px; font-weight: 700;
   }
   .step-tab .lbl { font-family: var(--f-mono); font-size: 12px; font-weight: 700; letter-spacing: 3.6px; text-transform: uppercase; color: var(--c-border); transition: color 0.25s ease; }
-  .step-tab .lbl .select-word { display: none; }
   .step-tab.is-active .num { display: flex; }
   .step-tab.is-active .lbl { color: var(--c-accent); }
-  .step-tab.is-active .lbl .select-word { display: inline; }
   .step-tab.is-done .lbl { color: var(--c-text-2); }
 
   /* Steps align to top: 40px below the step header. Steps 2/3 scroll beneath
@@ -279,7 +277,7 @@
   }
   .tip-scrim.is-open { opacity: 1; visibility: visible; }
   .tip-sheet {
-    position: fixed; top: 0; right: 0; bottom: 0; width: 480px; z-index: 50;
+    position: fixed; top: 0; right: 0; bottom: 0; width: var(--rail-w); z-index: 50;
     background: #fff; transform: translateX(100%); visibility: hidden;
     transition: transform 0.3s ease, visibility 0.3s;
   }
@@ -377,7 +375,6 @@
   .price-bar.has-discount .total { color: var(--c-accent); }
   .price-note { font-size: 12px; color: var(--c-text-2); line-height: 16px; }
   .price-nudge { font-size: 12px; color: var(--c-accent); line-height: 16px; display: none; }
-  .price-bar.has-nudge .price-nudge { display: block; }
 
   .atc {
     flex: 1; height: 56px; background: var(--c-accent); color: #fff;
@@ -476,9 +473,9 @@
   <div class="rail">
 
     <div class="step-header" id="stepHeader">
-      <div class="step-tab is-active" data-step="0"><span class="num">1</span><span class="lbl"><span class="select-word">SELECT&nbsp;</span>GOGGLES</span></div>
-      <div class="step-tab" data-step="1"><span class="num">2</span><span class="lbl"><span class="select-word">SELECT&nbsp;</span>HELMET</span></div>
-      <div class="step-tab" data-step="2"><span class="num">3</span><span class="lbl"><span class="select-word">SELECT&nbsp;</span>EXTRAS</span></div>
+      <div class="step-tab is-active" data-step="0"><span class="num">1</span><span class="lbl">GOGGLES</span></div>
+      <div class="step-tab" data-step="1"><span class="num">2</span><span class="lbl">HELMET</span></div>
+      <div class="step-tab" data-step="2"><span class="num">3</span><span class="lbl">EXTRAS</span></div>
     </div>
 
     <!-- ---- STEP 1: goggles ---- -->
