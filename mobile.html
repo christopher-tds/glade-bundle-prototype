@@ -31,11 +31,11 @@
     --rf-blur: 10px; /* softer blur on phones: cheaper on mobile GPUs */
     --rf-out: 0.5s;
     --rf-in: 0.9s;
-    --stage-h: min(440px, 52svh);
+    --stage-h: 48svh;
     --header-h: 41px;
     --footer-h: 105px;
   }
-  @supports not (height: 1svh) { :root { --stage-h: min(440px, 52vh); } }
+  @supports not (height: 1svh) { :root { --stage-h: 48vh; } }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: smooth; }
