@@ -265,7 +265,7 @@
   .opt-group { display: flex; flex-direction: column; gap: 12px; position: relative; }
   .opt-label { display: flex; gap: 8px; align-items: center; }
 
-  /* tooltip: PLP-redesign pattern — ⓘ beside the label opens an info panel */
+  /* tooltip: right-side drawer per Figma (lg / tooltip / sheet) — no strokes */
   .tip-btn {
     width: 16px; height: 16px; border: 1px solid var(--c-text-2); border-radius: 50%;
     display: inline-flex; align-items: center; justify-content: center; flex: 0 0 16px;
@@ -273,15 +273,22 @@
     transition: border-color 0.15s ease, color 0.15s ease;
   }
   .tip-btn:hover { border-color: var(--c-text); color: var(--c-text); }
-  .tip-pop {
-    position: absolute; left: 0; right: 0; top: calc(100% + 8px); z-index: 30;
-    background: #fff; border: 1px solid var(--c-border-strong); padding: 16px;
-    display: none;
+  .tip-scrim {
+    position: fixed; inset: 0; z-index: 49; background: rgba(0, 0, 0, 0.16);
+    opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s;
   }
-  .tip-pop.is-open { display: block; }
-  .tip-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .tip-close { font-size: 16px; line-height: 1; color: var(--c-text); padding: 2px; }
-  .tip-body { font-size: 14px; line-height: 20px; color: var(--c-text-2); }
+  .tip-scrim.is-open { opacity: 1; visibility: visible; }
+  .tip-sheet {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 480px; z-index: 50;
+    background: #fff; transform: translateX(100%); visibility: hidden;
+    transition: transform 0.3s ease, visibility 0.3s;
+  }
+  .tip-sheet.is-open { transform: translateX(0); visibility: visible; }
+  .tip-head { display: flex; justify-content: space-between; align-items: center; padding: 24px; }
+  .tip-title { font-family: var(--f-mono); font-size: 16px; font-weight: 700; letter-spacing: 3.2px; text-transform: uppercase; line-height: 16px; color: var(--c-text); }
+  .tip-close { padding: 0; }
+  .tip-close img { width: 24px; height: 24px; }
+  .tip-body { padding: 8px 24px 64px; font-size: 16px; line-height: 24px; color: #000; }
   .opt-group-head { display: flex; justify-content: space-between; align-items: center; }
   .size-chart { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--c-text); }
   .size-chart img { width: 16px; }
@@ -317,7 +324,7 @@
   .product-head .price { font-size: 16px; }
   .product-head .desc { font-size: 14px; line-height: 20px; color: var(--c-text-2); margin-top: 8px; }
 
-  .rail-step .section-gap { display: flex; flex-direction: column; gap: 40px; }
+  .rail-step .section-gap { display: flex; flex-direction: column; gap: 24px; }
 
   /* bundle notification: full-width bar above the price/ATC block */
   .rail-footer { position: sticky; bottom: 0; z-index: 10; }
@@ -332,7 +339,7 @@
   .helmet-added .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-accent); }
   .helmet-added button { text-decoration: underline; color: var(--c-text-2); font-size: 13px; }
 
-  .extras-title { font-size: 24px; font-weight: 700; margin-bottom: 16px; }
+  .extras-title { font-size: 24px; font-weight: 700; margin-bottom: 24px; }
   .extra-card {
     width: 100%; border: 1px solid var(--c-border); padding: 16px;
     display: flex; flex-direction: column; gap: 8px;
@@ -369,9 +376,8 @@
   .price-bar.has-discount .compare { display: inline; }
   .price-bar.has-discount .total { color: var(--c-accent); }
   .price-note { font-size: 12px; color: var(--c-text-2); line-height: 16px; }
-  /* Nudge hidden for now — destination TBD. Logic stays wired; restore by
-     reinstating `.price-bar.has-nudge .price-nudge { display: block; }`. */
   .price-nudge { font-size: 12px; color: var(--c-accent); line-height: 16px; display: none; }
+  .price-bar.has-nudge .price-nudge { display: block; }
 
   .atc {
     flex: 1; height: 56px; background: var(--c-accent); color: #fff;
@@ -536,22 +542,14 @@
             </div>
             <div class="opt-label-row"><span class="h6">COLOR</span><span class="val js-lens-name">Reveal 4K Blue / Matte Black</span></div>
             <div class="opt-group">
-              <div class="opt-label"><p class="h6">SIZE</p><button class="tip-btn js-tip" type="button" aria-label="About face size">i</button></div>
-              <div class="tip-pop">
-                <div class="tip-head"><span class="h6">FACE SIZE</span><button class="tip-close js-tip-close" type="button" aria-label="Close">&times;</button></div>
-                <p class="tip-body">The Adapt 3 comes in two fits. The standard frame is sized for medium to large faces, and the Adapt S is built for smaller faces. Same lens, same features, just a better seal for your face.</p>
-              </div>
+              <div class="opt-label"><p class="h6">SIZE</p><button class="tip-btn js-tip" data-tip="size" type="button" aria-label="About face size">i</button></div>
               <div class="btn-row" data-opts>
                 <button class="opt-btn is-selected">REGULAR</button>
                 <button class="opt-btn">SMALL</button>
               </div>
             </div>
             <div class="opt-group">
-              <div class="opt-label"><p class="h6">NOSE BRIDGE</p><button class="tip-btn js-tip" type="button" aria-label="About nose bridge">i</button></div>
-              <div class="tip-pop">
-                <div class="tip-head"><span class="h6">NOSE BRIDGE</span><button class="tip-close js-tip-close" type="button" aria-label="Close">&times;</button></div>
-                <p class="tip-body">The Low Bridge fit adds extra foam at the nose and adjusts the frame angle for faces with lower nose bridges and higher cheekbones — no goggle gap, no slipping.</p>
-              </div>
+              <div class="opt-label"><p class="h6">NOSE BRIDGE</p><button class="tip-btn js-tip" data-tip="bridge" type="button" aria-label="About nose bridge">i</button></div>
               <div class="btn-row" data-opts>
                 <button class="opt-btn is-selected">STANDARD</button>
                 <button class="opt-btn">LOW BRIDGE</button>
@@ -576,11 +574,7 @@
             </div>
             <div class="opt-label-row"><span class="h6">COLOR</span><span class="val">Reveal 4K Bronze / Matte Black</span></div>
             <div class="opt-group">
-              <div class="opt-label"><p class="h6">LENS SHAPE</p><button class="tip-btn js-tip" type="button" aria-label="About lens shape">i</button></div>
-              <div class="tip-pop">
-                <div class="tip-head"><span class="h6">LENS SHAPE</span><button class="tip-close js-tip-close" type="button" aria-label="Close">&times;</button></div>
-                <p class="tip-body">Toric lenses curve on two axes for a wider field of view with less distortion at the edges. Cylindrical lenses curve horizontally only for a classic, low-profile look.</p>
-              </div>
+              <div class="opt-label"><p class="h6">LENS SHAPE</p><button class="tip-btn js-tip" data-tip="shape" type="button" aria-label="About lens shape">i</button></div>
               <div class="btn-row" data-opts>
                 <button class="opt-btn is-selected" data-lens-img="f2t">TORIC</button>
                 <button class="opt-btn" data-lens-img="f2c">CYLINDRICAL</button>
@@ -680,6 +674,22 @@
       </div>
     </section>
 
+
+    <!-- tooltip drawer (per Figma lg / tooltip / sheet) -->
+    <div class="tip-scrim js-tip-scrim"></div>
+    <div class="tip-sheet" data-sheet="size">
+      <div class="tip-head"><span class="tip-title">FACE Size</span><button class="tip-close js-tip-close" type="button" aria-label="Close"><img src="assets/icon-close.svg" alt=""></button></div>
+      <p class="tip-body">The Adapt 3 comes in two fits. The standard frame is sized for medium to large faces, and the Adapt S is built for smaller faces. Same lens, same features, just a better seal for your face.</p>
+    </div>
+    <div class="tip-sheet" data-sheet="bridge">
+      <div class="tip-head"><span class="tip-title">Nose Bridge</span><button class="tip-close js-tip-close" type="button" aria-label="Close"><img src="assets/icon-close.svg" alt=""></button></div>
+      <p class="tip-body">The Adapt 3 comes in a standard fit and a low-bridge fit. Low-bridge is shaped for a lower nose bridge and higher cheekbones to reduce gaps and improve comfort. If goggles usually leave a gap at your nose, go with low-bridge.</p>
+    </div>
+    <div class="tip-sheet" data-sheet="shape">
+      <div class="tip-head"><span class="tip-title">Lens shape</span><button class="tip-close js-tip-close" type="button" aria-label="Close"><img src="assets/icon-close.svg" alt=""></button></div>
+      <p class="tip-body">The Fathom 2 comes in two lens shapes. Toric lenses curve in two directions to match the shape of your eye, which reduces distortion and gives you a more natural view at the edges. Cylindrical lenses give you similar optical quality with a clean, classic look.</p>
+    </div>
+
     <!-- ---- sticky footer: bundle notification + price bar ---- -->
     <div class="rail-footer">
     <div class="helmet-added js-goggle-added">
@@ -711,7 +721,7 @@
 
   var PRICES = { adapt3: 169, fathom2: 239, divide: 149, helmet: 199 };
   var MODEL_LENS = { adapt3: 'adapt3', fathom2: 'f2t', divide: 'divide' };
-  var state = { goggle: 'adapt3', helmet: false, extras: {}, activePanel: 0 };
+  var state = { goggle: 'adapt3', helmet: false, extras: {}, extrasOrder: [], activePanel: 0 };
 
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -891,26 +901,24 @@
   });
   document.addEventListener('click', closeDropdowns);
 
-  /* tooltips */
+  /* tooltips: drawer + scrim */
+  var tipScrim = document.querySelector('.js-tip-scrim');
   function closeTips() {
-    Array.prototype.slice.call(document.querySelectorAll('.tip-pop.is-open')).forEach(function (p) { p.classList.remove('is-open'); });
+    Array.prototype.slice.call(document.querySelectorAll('.tip-sheet.is-open')).forEach(function (sh) { sh.classList.remove('is-open'); });
+    tipScrim.classList.remove('is-open');
   }
   Array.prototype.slice.call(document.querySelectorAll('.js-tip')).forEach(function (btn) {
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
-      var pop = btn.closest('.opt-group').querySelector('.tip-pop');
-      var open = pop.classList.contains('is-open');
       closeTips();
-      if (!open) pop.classList.add('is-open');
+      var sheet = document.querySelector('.tip-sheet[data-sheet="' + btn.getAttribute('data-tip') + '"]');
+      if (sheet) { sheet.classList.add('is-open'); tipScrim.classList.add('is-open'); }
     });
   });
   Array.prototype.slice.call(document.querySelectorAll('.js-tip-close')).forEach(function (btn) {
-    btn.addEventListener('click', function (e) { e.stopPropagation(); closeTips(); });
+    btn.addEventListener('click', closeTips);
   });
-  Array.prototype.slice.call(document.querySelectorAll('.tip-pop')).forEach(function (pop) {
-    pop.addEventListener('click', function (e) { e.stopPropagation(); });
-  });
-  document.addEventListener('click', closeTips);
+  tipScrim.addEventListener('click', closeTips);
 
   /* ============ lens swap on the hero (rack focus) ============ */
   var lensLayers = Array.prototype.slice.call(document.querySelectorAll('.lens-layer'));
@@ -1015,7 +1023,8 @@
       var key = card.getAttribute('data-extra');
       var price = parseInt(card.getAttribute('data-price'), 10);
       var on = !state.extras[key];
-      if (on) state.extras[key] = price; else delete state.extras[key];
+      if (on) { state.extras[key] = price; state.extrasOrder.push(key); }
+      else { delete state.extras[key]; state.extrasOrder = state.extrasOrder.filter(function (k) { return k !== key; }); }
       card.classList.toggle('is-selected', on);
       card.querySelector('.js-add-state').textContent = on ? 'In your bundle' : 'Add to bundle';
       syncStepHeader(state.activePanel);
@@ -1040,19 +1049,30 @@
 
   function updatePrice() {
     var subtotal = bundleSubtotal();
-    var extrasCount = Object.keys(state.extras).length;
-    // Live rule: 15% requires goggle + helmet + eligible accessory (all three).
+    var extrasCount = state.extrasOrder.length;
+    // Live rule: 15% off goggle + helmet + ONE accessory (the one that
+    // triggered the bundle). Additional accessories stay full price.
     var discounted = state.helmet && extrasCount > 0;
-    var target = discounted ? subtotal * 0.85 : subtotal;
+    var discountBase = discounted ? PRICES[state.goggle] + PRICES.helmet + state.extras[state.extrasOrder[0]] : 0;
+    var target = subtotal - discountBase * 0.15;
 
     priceBar.classList.toggle('has-discount', discounted);
     compareEl.textContent = '$' + subtotal;
 
-    var missing = [];
-    if (!state.helmet) missing.push('a helmet');
-    if (extrasCount === 0) missing.push(state.helmet ? 'an accessory' : 'accessory');
-    priceBar.classList.toggle('has-nudge', !discounted);
-    if (!discounted) nudgeEl.textContent = 'Add ' + missing.join(' + ') + ' to save 15%';
+    // Promo messaging: a goggle alone stays buyable, but say the 15% won't apply.
+    var msg = '';
+    if (!discounted) {
+      var missing = [];
+      if (!state.helmet) missing.push('a helmet');
+      if (extrasCount === 0) missing.push('an accessory');
+      msg = 'Buy now, or add ' + missing.join(' + ') + ' to save 15% on the bundle';
+    } else if (extrasCount > 1) {
+      msg = '15% applies to your goggle, helmet + first accessory';
+    } else {
+      msg = 'You\u2019re saving $' + (discountBase * 0.15).toFixed(2) + ' with the MagFit\u2122 bundle';
+    }
+    nudgeEl.textContent = msg;
+    priceBar.classList.add('has-nudge');
 
     animateTotal(target);
   }
