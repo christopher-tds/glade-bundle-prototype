@@ -226,13 +226,13 @@
     background: #fff; border-top: 0 solid var(--c-border);
     padding: 0 24px; max-height: 0; overflow: hidden;
     display: flex; gap: 12px; align-items: flex-start;
-    opacity: 0; transform: translateY(12px);
-    transition: max-height 0.35s ease, padding 0.35s ease, opacity 0.3s ease 0.05s, transform 0.35s ease, border-top-width 0.35s ease;
+    opacity: 0;
+    transition: opacity 0.35s ease;
   }
   .rail-footer.at-end .price-bar {
     max-height: 180px; border-top-width: 1px;
     padding: 24px 24px calc(24px + env(safe-area-inset-bottom));
-    opacity: 1; transform: translateY(0);
+    opacity: 1;
   }
   @media (prefers-reduced-motion: reduce) { .price-bar { transition: none; } }
   .price-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
