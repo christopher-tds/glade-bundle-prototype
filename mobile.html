@@ -253,6 +253,12 @@
 </head>
 <body>
 
+<!-- TEMP: stage-height tuner — remove before sharing wider -->
+<div id="stageTuner" style="position:fixed; top:8px; right:8px; z-index:60; background:rgba(44,42,38,0.92); color:#fff; padding:8px 10px; border-radius:6px; font:11px/1.4 var(--f-mono); display:flex; gap:8px; align-items:center;">
+  <span>STAGE <span id="stageVal">48</span>svh</span>
+  <input id="stageRange" type="range" min="30" max="70" value="48" step="1" style="width:110px; accent-color:#ec572e;">
+</div>
+
 <div class="announcement"><span>WINTER 26/27 IS HERE</span><span class="shop">SHOP NOW</span></div>
 
 <nav class="nav">
@@ -875,6 +881,14 @@
       railFooter.classList.toggle('at-end', entry.isIntersecting);
     });
   }, { rootMargin: '0px 0px 80px 0px' }).observe(endSentinel);
+
+  /* TEMP: stage-height tuner */
+  var stageRange = document.getElementById('stageRange');
+  var stageVal = document.getElementById('stageVal');
+  stageRange.addEventListener('input', function () {
+    stageVal.textContent = stageRange.value;
+    document.documentElement.style.setProperty('--stage-h', stageRange.value + 'svh');
+  });
 
   /* ===== screenshot presets ===== */
   var params = new URLSearchParams(location.search);
