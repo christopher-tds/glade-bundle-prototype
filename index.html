@@ -1159,7 +1159,7 @@
 </script>
 <script type="module">
 /* Combined helmet + goggle scene (separate GLBs overlaid in code, per the
-   MagFit builder approach). Goggle offset calibrated: y -0.033, z 0.012. */
+   MagFit builder approach). Goggle offset calibrated: y -0.035, z 0.026, scale 0.8. */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
@@ -1199,7 +1199,8 @@ window.initCombinedViewer = function (canvas, onReady) {
     loader.loadAsync('https://cdn.shopify.com/3d/models/09b5a4cda3670980/adapt_3_blue_black_ll.glb')
   ]).then(function (res) {
     scene.add(res[0].scene);
-    res[1].scene.position.set(0, -0.033, 0.012);
+    res[1].scene.position.set(0, -0.035, 0.026);
+    res[1].scene.scale.setScalar(0.8);
     scene.add(res[1].scene);
     var box = new THREE.Box3().setFromObject(scene);
     var center = box.getCenter(new THREE.Vector3());
