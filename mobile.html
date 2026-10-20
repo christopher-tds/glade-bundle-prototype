@@ -78,6 +78,7 @@
   .is-ready .lens-layer.is-active .stage-img { filter: blur(0); transition: filter var(--rf-in) cubic-bezier(0.22, 0.61, 0.36, 1); }
 
   .stage-3d { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 100%; height: 100%; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; --poster-color: transparent; background: transparent; --progress-bar-height: 0px; }
+  .stage-3d--combined { width: 100%; height: 100%; }
   .has-model .stage-3d { opacity: 1; }
   .has-model .stage-img { opacity: 0; transition: opacity 0.5s ease; }
   .stage-panel.is-active .lens-layer.is-active.has-model .stage-3d,
@@ -305,7 +306,7 @@
   <div class="stage-panel" data-panel="1">
     <div class="stage-img-wrap">
       <img class="stage-img" src="assets/helmet-boundary.png" alt="Boundary MIPS helmet">
-      <model-viewer class="stage-3d" data-src="https://cdn.shopify.com/3d/models/cc7d20cbf01e6789/boundary-test-import.glb" camera-controls touch-action="pan-y" camera-orbit="-41deg 90deg" environment-image="neutral" exposure="1" shadow-intensity="0.6" interaction-prompt="none" alt="Boundary MIPS helmet 3D"></model-viewer>
+      <canvas class="stage-3d stage-3d--combined"></canvas>
     </div>
     <p class="stage-copy"><strong>Finally close the gap.</strong> <span>MagFit™ snaps goggle and helmet together in one easy motion.</span></p>
     <img class="stage-mips" src="assets/logo-mips.svg" alt="MIPS">
@@ -483,7 +484,7 @@
         <button class="model-card" data-helmet="headland">
           <span class="model-thumb"><img src="assets/thumb-boundary.png" alt=""></span>
           <span class="model-info">
-            <span class="model-top"><span class="name">Headland</span><span class="price-pair"><s>$169</s><span class="cur">$143.65</span></span></span>
+            <span class="model-top"><span class="name">Headland MIPS</span><span class="price-pair"><s>$169</s><span class="cur">$143.65</span></span></span>
             <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(1563)</span>
             <span class="model-desc">Classic fit, everyday versatility</span>
           </span>
@@ -502,7 +503,7 @@
           <div class="dd-menu">
             <button class="dd-item is-current" data-helmet="boundary"><span class="name">Boundary MIPS</span><span class="price-pair"><s>$199</s><span class="cur">$169.15</span></span></button>
             <button class="dd-item" data-helmet="tenmile"><span class="name">Tenmile 2 MIPS</span><span class="price-pair"><s>$149</s><span class="cur">$126.65</span></span></button>
-            <button class="dd-item" data-helmet="headland"><span class="name">Headland</span><span class="price-pair"><s>$169</s><span class="cur">$143.65</span></span></button>
+            <button class="dd-item" data-helmet="headland"><span class="name">Headland MIPS</span><span class="price-pair"><s>$169</s><span class="cur">$143.65</span></span></button>
           </div>
         </div>
         <div class="detail-body" id="helmetBody">
@@ -604,7 +605,7 @@
   var HELMETS = {
     boundary: { name: 'Boundary MIPS', price: 199, rating: '(262)', desc: 'The Boundary MIPS takes our best-selling premium helmet and integrates it into the MagFit™ System.' },
     tenmile: { name: 'Tenmile 2 MIPS', price: 149, rating: '(1563)', desc: 'The Tenmile 2 MIPS brings lightweight, all-mountain protection into the MagFit™ System.' },
-    headland: { name: 'Headland', price: 169, rating: '(1563)', desc: 'The Headland pairs a classic fit with everyday versatility, fully integrated with MagFit™.' }
+    headland: { name: 'Headland MIPS', price: 169, rating: '(1563)', desc: 'The Headland MIPS pairs a classic fit with everyday versatility, fully integrated with MagFit™.' }
   };
   var MODEL_LENS = { adapt3: 'adapt3', fathom2: 'f2t', divide: 'divide' };
   var state = { goggle: 'adapt3', goggleAdded: false, helmet: 'boundary', helmetAdded: false, extras: {}, extrasOrder: [], activePanel: 0 };
@@ -629,6 +630,16 @@
     var active = document.querySelector('.lens-layer.is-active');
     if (active) ensureModel(active);
   });
+  function ensureCombined(wrap) {
+    if (!wrap || noGlb || wrap.dataset.combined) return;
+    wrap.dataset.combined = '1';
+    var canvas = wrap.querySelector('.stage-3d--combined');
+    if (!canvas) return;
+    var start = function () {
+      window.initCombinedViewer(canvas, function () { wrap.classList.add('has-model'); });
+    };
+    if (window.initCombinedViewer) start(); else window.__combinedPending = start;
+  }
 
   var transitionTimer = null;
   function setActivePanel(i) {
@@ -645,7 +656,7 @@
       stage.classList.remove('is-transitioning');
       panels.forEach(function (p) { p.classList.remove('is-leaving'); });
     }, 950);
-    if (i === 1) ensureModel(panels[1].querySelector('.stage-img-wrap'));
+    if (i === 1) ensureCombined(panels[1].querySelector('.stage-img-wrap'));
     syncStepHeader(i);
   }
 
@@ -977,6 +988,9 @@
       if (dd) dd.classList.add('is-open');
     }, 600);
   }
+  if (params.get('panel')) {
+    setTimeout(function () { setActivePanel(parseInt(params.get('panel'), 10)); }, 500);
+  }
   var preset = params.get('preset');
   if (preset === 'detail' || preset === 'bundle') {
     document.querySelector('#goggleSwap .model-card[data-model="adapt3"]').click();
@@ -988,6 +1002,72 @@
     document.querySelector('.extra-card[data-extra="necktube"]').click();
   }
 })();
+</script>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+/* Combined helmet + goggle scene (separate GLBs overlaid in code, per the
+   MagFit builder approach). Goggle offset calibrated: y -0.033, z 0.012. */
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+window.initCombinedViewer = function (canvas, onReady) {
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+  var scene = new THREE.Scene();
+  scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+
+  var camera = new THREE.PerspectiveCamera(30, 1, 0.01, 100);
+  var controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.enablePan = false;
+
+  function size() {
+    var w = canvas.clientWidth || canvas.parentElement.clientWidth;
+    var h = canvas.clientHeight || canvas.parentElement.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  size();
+  window.addEventListener('resize', size);
+
+  var loader = new GLTFLoader();
+  var draco = new DRACOLoader();
+  draco.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+  loader.setDRACOLoader(draco);
+
+  Promise.all([
+    loader.loadAsync('https://cdn.shopify.com/3d/models/cc7d20cbf01e6789/boundary-test-import.glb'),
+    loader.loadAsync('https://cdn.shopify.com/3d/models/09b5a4cda3670980/adapt_3_blue_black_ll.glb')
+  ]).then(function (res) {
+    scene.add(res[0].scene);
+    res[1].scene.position.set(0, -0.033, 0.012);
+    scene.add(res[1].scene);
+    var box = new THREE.Box3().setFromObject(scene);
+    var center = box.getCenter(new THREE.Vector3());
+    var radius = box.getSize(new THREE.Vector3()).length() * 1.5;
+    var az = -41 * Math.PI / 180;
+    camera.position.set(center.x + radius * Math.sin(az), center.y, center.z + radius * Math.cos(az));
+    controls.target.copy(center);
+    controls.update();
+    size();
+    if (onReady) onReady();
+  }).catch(function (e) { console.error('combined viewer', e); });
+
+  (function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
+};
+if (window.__combinedPending) { window.__combinedPending(); window.__combinedPending = null; }
 </script>
 </body>
 </html>
