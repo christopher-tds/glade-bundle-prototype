@@ -986,17 +986,25 @@
     goggleBtn.textContent = state.goggleAdded ? 'Remove from bundle' : 'Add to bundle';
     helmetBtn.textContent = state.helmetAdded ? 'Remove from bundle' : 'Add to bundle';
   }
+  // adding an item auto-advances to the next step
+  function advanceTo(i) {
+    setTimeout(function () {
+      sections[i].scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    }, 450);
+  }
   goggleBtn.addEventListener('click', function () {
     state.goggleAdded = !state.goggleAdded;
     syncBundleButtons();
     syncStepHeader(state.activePanel);
     updatePrice();
+    if (state.goggleAdded) advanceTo(1);
   });
   helmetBtn.addEventListener('click', function () {
     state.helmetAdded = !state.helmetAdded;
     syncBundleButtons();
     syncStepHeader(state.activePanel);
     updatePrice();
+    if (state.helmetAdded) advanceTo(2);
   });
 
   /* ============ lens layers / hero ============ */
