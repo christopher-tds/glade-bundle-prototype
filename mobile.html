@@ -56,8 +56,7 @@
   .nav-icons img { width: 22px; height: 22px; }
 
   /* ============ pinned stage (Cowboy-style persistent media) ============ */
-  .stage { position: sticky; top: 0; z-index: 5; height: var(--stage-h); background: var(--c-warm); overflow: hidden; transition: background-color 0.6s ease; }
-  .stage.is-lowlight { background: #d6d4ca; }
+  .stage { position: sticky; top: 0; z-index: 5; height: var(--stage-h); background: var(--c-warm); overflow: hidden; }
 
   .stage-panel { position: absolute; inset: 0; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity var(--rf-out) ease, visibility 0s linear var(--rf-out); }
   .stage-panel.is-active { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity var(--rf-in) ease, visibility 0s; }
@@ -268,7 +267,7 @@
   @media (prefers-reduced-motion: reduce) {
     :root { --rf-blur: 0px; --rf-out: 0s; --rf-in: 0s; }
     html { scroll-behavior: auto; }
-    .stage-panel, .stage-img, .stage-copy, .swap-view, .detail-body, .lens-layer, .tip-sheet, .stage { transition: none !important; }
+    .stage-panel, .stage-img, .stage-copy, .swap-view, .detail-body, .lens-layer, .tip-sheet { transition: none !important; }
   }
 </style>
 </head>
@@ -916,7 +915,6 @@
       var mode = b.getAttribute('data-mode');
       if (mode === lensMode) return;
       lensMode = mode;
-      document.querySelector('.stage').classList.toggle('is-lowlight', lensMode === 'll');
       syncToggle();
       setLens(lensBase, null);
     });
