@@ -928,9 +928,11 @@
   }
   function updatePrice() {
     var subtotal = bundleSubtotal();
-    // Everything in the bundle is 15% off; compare-at shows full pricing.
-    var discounted = subtotal > 0;
-    var target = subtotal * 0.85;
+    // Megan's rule: 15% off goggle + helmet + ONE accessory (the one that
+    // triggered the bundle). Additional accessories stay full price.
+    var discounted = state.goggleAdded && state.helmetAdded && state.extrasOrder.length > 0;
+    var discountBase = discounted ? GOGGLES[state.goggle].price + HELMETS[state.helmet].price + state.extras[state.extrasOrder[0]] : 0;
+    var target = subtotal - discountBase * 0.15;
     priceBar.classList.toggle('has-discount', discounted);
     compareEl.textContent = '$' + subtotal;
     animateTotal(target);
