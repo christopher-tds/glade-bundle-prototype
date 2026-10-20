@@ -156,6 +156,11 @@
   .stage-panel.is-active .stage-copy { opacity: 1; transform: translateY(0); transition-delay: 0.25s; }
   .stage-panel.is-leaving .stage-copy { opacity: 0; transform: translateY(-14px); transition-delay: 0s; }
 
+  .lens-toggle { position: fixed; left: 24px; bottom: 24px; z-index: 3; display: flex; flex-direction: column; gap: 4px; }
+  .lt-row { display: flex; gap: 16px; align-items: center; }
+  .lt-btn { padding: 0; width: 24px; height: 24px; }
+  .lt-btn img { width: 24px; height: 24px; }
+  .lt-label { font-size: 12px; line-height: 16px; color: var(--c-text-2); }
   .stage-mips { position: absolute; left: 40px; bottom: 40px; width: 64px; height: 64px; }
 
   /* ---- right: rail ---- */
@@ -426,7 +431,7 @@
       <!-- panel 0: goggles (lens-swap pair) -->
       <div class="stage-panel is-active" data-panel="0">
         <div class="stage-img-wrap">
-          <div class="lens-layer is-active" data-lens="adapt3">
+          <div class="lens-layer" data-lens="adapt3">
             <img class="stage-img" src="assets/adapt3-41.png" alt="Adapt 3 goggle">
             <model-viewer class="stage-3d" data-src="https://cdn.shopify.com/3d/models/09b5a4cda3670980/adapt_3_blue_black_ll.glb" camera-controls touch-action="pan-y" camera-orbit="-41deg 90deg 110%" environment-image="neutral" exposure="1" shadow-intensity="0.6" interaction-prompt="none" alt="Adapt 3 goggle 3D"></model-viewer>
           </div>
@@ -446,6 +451,33 @@
             <img class="stage-img" src="assets/divide-41.png" alt="Divide goggle">
             <model-viewer class="stage-3d" data-src="https://cdn.shopify.com/3d/models/21f89f6cccb50b0f/divide_orange_black_ll.glb" camera-controls touch-action="pan-y" camera-orbit="-41deg 90deg 110%" environment-image="neutral" exposure="1" shadow-intensity="0.6" interaction-prompt="none" alt="Divide goggle 3D"></model-viewer>
           </div>
+          <div class="lens-layer is-active" data-lens="adapt3-fs">
+            <img class="stage-img" src="assets/adapt3-fs.png" alt="Adapt 3 goggle, full sun">
+            <model-viewer class="stage-3d" data-src="https://cdn.shopify.com/3d/models/7f580c6839ab88d3/adapt_3_blue_black_fs.glb" camera-controls touch-action="pan-y" camera-orbit="-41deg 90deg 110%" environment-image="neutral" exposure="1" shadow-intensity="0.6" interaction-prompt="none" alt="Adapt 3 goggle, full sun 3D"></model-viewer>
+          </div>
+          <div class="lens-layer" data-lens="adapt3-dark-fs">
+            <img class="stage-img" src="assets/adapt3-ll.png" alt="Adapt 3 goggle, dark full sun">
+            <model-viewer class="stage-3d" data-src="https://cdn.shopify.com/3d/models/f28a12a6b98fb0ed/adapt_3_black_black_fs.glb" camera-controls touch-action="pan-y" camera-orbit="-41deg 90deg 110%" environment-image="neutral" exposure="1" shadow-intensity="0.6" interaction-prompt="none" alt="Adapt 3 goggle, dark full sun 3D"></model-viewer>
+          </div>
+          <div class="lens-layer" data-lens="f2t-fs">
+            <img class="stage-img" src="assets/f2t-41.png" alt="Fathom 2 toric, full sun">
+            <model-viewer class="stage-3d" data-src="https://cdn.shopify.com/3d/models/340a7dcef85d8d4d/f2t_blue_navy_fs.glb" camera-controls touch-action="pan-y" camera-orbit="-41deg 90deg 110%" environment-image="neutral" exposure="1" shadow-intensity="0.6" interaction-prompt="none" alt="Fathom 2 toric, full sun 3D"></model-viewer>
+          </div>
+          <div class="lens-layer" data-lens="f2c-fs">
+            <img class="stage-img" src="assets/f2c-41.png" alt="Fathom 2 cylindrical, full sun">
+            <model-viewer class="stage-3d" data-src="https://cdn.shopify.com/3d/models/2a13367773c12efa/f2c_bronze_black_fs.glb" camera-controls touch-action="pan-y" camera-orbit="-41deg 90deg 110%" environment-image="neutral" exposure="1" shadow-intensity="0.6" interaction-prompt="none" alt="Fathom 2 cylindrical, full sun 3D"></model-viewer>
+          </div>
+          <div class="lens-layer" data-lens="divide-fs">
+            <img class="stage-img" src="assets/divide-41.png" alt="Divide goggle, full sun">
+            <model-viewer class="stage-3d" data-src="https://cdn.shopify.com/3d/models/d772e2680b949018/divide_orange_black_fs.glb" camera-controls touch-action="pan-y" camera-orbit="-41deg 90deg 110%" environment-image="neutral" exposure="1" shadow-intensity="0.6" interaction-prompt="none" alt="Divide goggle, full sun 3D"></model-viewer>
+          </div>
+        </div>
+        <div class="lens-toggle" role="group" aria-label="Lens mode">
+          <div class="lt-row">
+            <button class="lt-btn js-lt" data-mode="fs" type="button" aria-label="Full sun"><img src="assets/icon-sun-on.svg" alt=""></button>
+            <button class="lt-btn js-lt" data-mode="ll" type="button" aria-label="Low light"><img src="assets/icon-moon-off.svg" alt=""></button>
+          </div>
+          <p class="lt-label js-lt-label">Full sun</p>
         </div>
         <p class="stage-copy"><strong>MagFit™ ready.</strong> <span>Reduce the possibility of a “goggle gap”, ensure perfect alignment with the helmet vents to prevent fogging, and prevent vibration and shifting while skiing.</span></p>
       </div>
@@ -1010,7 +1042,11 @@
   /* ============ lens layers / hero ============ */
   var lensLayers = Array.prototype.slice.call(document.querySelectorAll('.lens-layer'));
   var lensNameEl = document.querySelector('.js-lens-name');
-  function setLens(key, label) {
+  var lensBase = 'adapt3';
+  var lensMode = 'fs'; // Full sun default, per the Reveal 4K Toggle component
+  function setLens(base, label) {
+    lensBase = base;
+    var key = lensMode === 'fs' ? base + '-fs' : base;
     lensLayers.forEach(function (l) {
       var active = l.getAttribute('data-lens') === key;
       l.classList.toggle('is-active', active);
@@ -1018,6 +1054,25 @@
     });
     if (label && lensNameEl) lensNameEl.textContent = label;
   }
+  var ltLabel = document.querySelector('.js-lt-label');
+  var ltBtns = Array.prototype.slice.call(document.querySelectorAll('.js-lt'));
+  function syncToggle() {
+    ltBtns.forEach(function (b) {
+      var mode = b.getAttribute('data-mode');
+      var on = mode === lensMode;
+      b.querySelector('img').src = 'assets/icon-' + (mode === 'fs' ? 'sun' : 'moon') + '-' + (on ? 'on' : 'off') + '.svg';
+    });
+    ltLabel.textContent = lensMode === 'fs' ? 'Full sun' : 'Low-light';
+  }
+  ltBtns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var mode = b.getAttribute('data-mode');
+      if (mode === lensMode) return;
+      lensMode = mode;
+      syncToggle();
+      setLens(lensBase, null);
+    });
+  });
   Array.prototype.slice.call(document.querySelectorAll('.js-lens-swatches .swatch')).forEach(function (sw) {
     sw.addEventListener('click', function () {
       selectWithin(sw);
