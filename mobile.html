@@ -103,9 +103,9 @@
     padding: 12px 24px 13px; background: #fff; border-bottom: 1px solid var(--c-border);
   }
   .step-tab { display: flex; gap: 12px; align-items: center; }
-  .step-tab .num { display: none; width: 16px; height: 16px; align-items: center; justify-content: center; background: var(--c-accent); color: #fff; font-family: var(--f-mono); font-size: 12px; font-weight: 700; }
+  .step-tab .num { display: flex; width: 16px; height: 16px; align-items: center; justify-content: center; background: var(--c-warm); color: var(--c-text-2); font-family: var(--f-mono); font-size: 12px; font-weight: 700; transition: background-color 0.25s ease, color 0.25s ease; }
   .step-tab .lbl { font-family: var(--f-mono); font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--c-border); transition: color 0.25s ease; }
-  .step-tab.is-active .num { display: flex; }
+  .step-tab.is-active .num { background: var(--c-accent); color: #fff; }
   .step-tab.is-active .lbl { color: var(--c-accent); }
   .step-tab.is-done .lbl { color: var(--c-text-2); }
 
@@ -123,8 +123,18 @@
   .detail { display: flex; flex-direction: column; gap: 20px; }
   .detail-body { display: flex; flex-direction: column; gap: 20px; }
 
+  .section-title { font-size: 20px; line-height: 28px; font-weight: 700; margin-bottom: 24px; }
+  .price-pair { display: flex; gap: 8px; align-items: baseline; font-size: 14px; line-height: 20px; font-weight: 350; white-space: nowrap; }
+  .price-pair s { color: var(--c-text-2); }
+  .price-pair .cur { color: var(--c-text); }
+  .bundle-btn {
+    width: 100%; height: 56px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--c-accent); background: #fff; color: var(--c-accent);
+    font-family: var(--f-mono); font-size: 13px; font-weight: 700; letter-spacing: 2.6px; text-transform: uppercase;
+    text-align: center; transition: background-color 0.15s ease;
+  }
   .model-list { display: flex; flex-direction: column; gap: 8px; }
-  .model-card { display: flex; gap: 16px; padding: 9px; width: 100%; border: 1px solid var(--c-border); background: #fff; transition: border-color 0.2s ease; }
+  .model-card { display: flex; gap: 16px; padding: 8px; width: 100%; border: 1px solid var(--c-border); background: #fff; transition: border-color 0.2s ease; }
   .model-thumb { width: 80px; height: 80px; flex: 0 0 80px; display: flex; align-items: center; justify-content: center; }
   .model-thumb img { width: 80px; mix-blend-mode: multiply; }
   .model-info { flex: 1; display: flex; flex-direction: column; gap: 6px; }
@@ -186,9 +196,9 @@
   .extra-card + .extra-card { margin-top: 8px; }
   .extra-card.is-selected { border-color: var(--c-border-strong); }
   .extra-card .row { display: flex; justify-content: space-between; align-items: flex-start; }
-  .extra-card .name { font-size: 14px; font-weight: 500; line-height: 18px; }
+  .extra-card .name { font-size: 20px; font-weight: 700; line-height: 28px; }
   .extra-card .price { font-size: 14px; }
-  .extra-card .desc { font-size: 14px; line-height: 20px; color: var(--c-text-2); }
+  .extra-card .desc { font-size: 13px; line-height: 16px; color: var(--c-text-2); }
   .extra-card .add-state { display: inline-flex; align-items: center; font-family: var(--f-mono); font-size: 9px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--c-text-2); }
   .extra-card.is-selected .add-state { color: var(--c-accent); }
   .extra-card .add-state::before { content: '+'; display: inline-flex; align-items: center; justify-content: center; width: 12px; height: 12px; flex: 0 0 12px; font-size: 11px; letter-spacing: 0; }
@@ -212,12 +222,6 @@
 
   /* ============ sticky footer: toasts + price bar ============ */
   .rail-footer { position: fixed; bottom: 0; left: 0; right: 0; z-index: 20; margin: 0 auto; max-width: 560px; }
-  .bundle-note { display: none; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; background: #fff; border-top: 1px solid var(--c-border); font-size: 12px; color: var(--c-text-2); }
-  .bundle-note.is-on { display: flex; opacity: 1; transition: opacity 0.4s ease; }
-  .bundle-note.is-fading { opacity: 0; }
-  .bundle-note .left { display: flex; gap: 8px; align-items: center; }
-  .bundle-note .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-accent); }
-  .bundle-note button { text-decoration: underline; color: var(--c-text-2); font-size: 12px; }
 
   /* price bar reveals only once the shopper reaches the bottom of the rail —
      not enough mobile real estate to pin it throughout. Height collapses while
@@ -317,12 +321,15 @@
   </div>
 
   <div class="swap" id="goggleSwap">
+
+    <!-- view: style list -->
     <div class="swap-view" data-view="list">
+      <p class="section-title">Select goggles</p>
       <div class="model-list">
         <button class="model-card" data-model="adapt3">
           <span class="model-thumb"><img src="assets/thumb-adapt3.png" alt=""></span>
           <span class="model-info">
-            <span class="model-top"><span class="name">Adapt 3</span><span class="price">$169</span></span>
+            <span class="model-top"><span class="name">Adapt 3</span><span class="price-pair"><s>$169</s><span class="cur">$169</span></span></span>
             <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(1563)</span>
             <span class="model-desc">Refined semi-frameless design</span>
           </span>
@@ -330,7 +337,7 @@
         <button class="model-card" data-model="fathom2">
           <span class="model-thumb"><img src="assets/thumb-fathom2.png" alt=""></span>
           <span class="model-info">
-            <span class="model-top"><span class="name">Fathom 2</span><span class="price">$239</span></span>
+            <span class="model-top"><span class="name">Fathom 2</span><span class="price-pair"><s>$239</s><span class="cur">$239</span></span></span>
             <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(734)</span>
             <span class="model-desc">Our most premium goggle</span>
           </span>
@@ -338,7 +345,7 @@
         <button class="model-card" data-model="divide">
           <span class="model-thumb"><img src="assets/thumb-divide.png" alt=""></span>
           <span class="model-info">
-            <span class="model-top"><span class="name">Divide</span><span class="price">$149</span></span>
+            <span class="model-top"><span class="name">Divide</span><span class="price-pair"><s>$149</s><span class="cur">$149</span></span></span>
             <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(882)</span>
             <span class="model-desc">Bold, full-frame styling</span>
           </span>
@@ -346,24 +353,25 @@
       </div>
     </div>
 
+    <!-- view: model details — the selector persists, only the body swaps -->
     <div class="swap-view is-hidden" data-view="detail">
       <div class="detail">
         <div class="dd">
           <button class="selected-box js-dd-toggle">
             <span class="tag">Selected</span>
-            <span class="row"><span class="name" id="selName">Adapt 3</span><span class="right"><span id="selPrice">$169</span> <svg class="chev" width="12" height="7" viewBox="0 0 14 8" fill="none"><path d="M1 1l6 6 6-6" stroke="#2c2a26" stroke-width="1.5"/></svg></span></span>
+            <span class="row"><span class="name" id="selName">Adapt 3</span><span class="right"><span class="price-pair"><s id="selCompare">$169</s><span class="cur" id="selPrice">$169</span></span> <svg class="chev" width="14" height="8" viewBox="0 0 14 8" fill="none"><path d="M1 1l6 6 6-6" stroke="#2c2a26" stroke-width="1.5"/></svg></span></span>
           </button>
           <div class="dd-menu">
-            <button class="dd-item is-current" data-model="adapt3"><span class="name">Adapt 3</span><span class="price">$169</span></button>
-            <button class="dd-item" data-model="fathom2"><span class="name">Fathom 2</span><span class="price">$239</span></button>
-            <button class="dd-item" data-model="divide"><span class="name">Divide</span><span class="price">$149</span></button>
+            <button class="dd-item is-current" data-model="adapt3"><span class="name">Adapt 3</span><span class="price-pair"><s>$169</s><span class="cur">$169</span></span></button>
+            <button class="dd-item" data-model="fathom2"><span class="name">Fathom 2</span><span class="price-pair"><s>$239</s><span class="cur">$239</span></span></button>
+            <button class="dd-item" data-model="divide"><span class="name">Divide</span><span class="price-pair"><s>$149</s><span class="cur">$149</span></span></button>
           </div>
         </div>
         <div class="detail-swap">
         <div class="detail-body" data-body="adapt3">
           <div class="detail-blurb">
             <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(1563)</span>
-            <p>Refined semi-frameless design pairs an expanded field of view with a versatile face form</p>
+            <p>Refined semi-frameless design pairs an expanded field of view with a versatile face form.</p>
           </div>
           <div class="opt-label-row"><span class="h6">COLOR</span><span class="val js-lens-name">Reveal 4K Blue / Matte Black</span></div>
           <div class="opt-group">
@@ -383,10 +391,12 @@
           <div class="opt-group">
             <div class="opt-label-row"><span class="h6">REVEAL 4K®</span><span class="new-badge">NEW</span></div>
             <div class="swatch-row js-lens-swatches">
-              <button class="swatch is-selected" data-lens-img="adapt3" data-lens-label="Reveal 4K Blue / Matte Black"><img src="assets/lens-blue-black.png" alt=""></button>
-              <button class="swatch" data-lens-img="adapt3-dark" data-lens-label="Reveal 4K Photochromic / Matte Black"><img src="assets/lens-black-maroon.png" alt=""></button>
-              <button class="swatch" data-lens-img="adapt3-dark" data-lens-label="Reveal 4K Bronze / Midnight Navy"><img src="assets/lens-bronze-navy.png" alt=""></button>
-              <button class="swatch" data-lens-img="adapt3-dark" data-lens-label="Reveal 4K Black / Black"><img src="assets/lens-black-black.png" alt=""></button>
+              <button class="swatch is-selected" data-lens-img="adapt3" data-lens-label="Reveal 4K Blue / Matte Black"><img src="assets/lens-blue-black.png" alt="Blue / Matte Black"></button>
+              <button class="swatch" data-lens-img="adapt3-dark" data-lens-label="Reveal 4K Photochromic / Matte Black"><img src="assets/lens-black-maroon.png" alt="Black / Maroon"></button>
+              <button class="swatch" data-lens-img="adapt3-dark" data-lens-label="Reveal 4K Bronze / Midnight Navy"><img src="assets/lens-bronze-navy.png" alt="Bronze / Midnight Navy"></button>
+              <button class="swatch" data-lens-img="adapt3-dark" data-lens-label="Reveal 4K Black / Black"><img src="assets/lens-black-black.png" alt="Black / Black"></button>
+              <button class="swatch" data-lens-img="adapt3-dark" data-lens-label="Reveal 4K Black / Black"><img src="assets/lens-black-black.png" alt="Black / Black"></button>
+              <button class="swatch" data-lens-img="adapt3-dark" data-lens-label="Reveal 4K Black / Black"><img src="assets/lens-black-black.png" alt="Black / Black"></button>
             </div>
           </div>
         </div>
@@ -430,67 +440,118 @@
           </div>
         </div>
         </div>
+        <button class="bundle-btn js-goggle-bundle" type="button">Add to bundle</button>
       </div>
     </div>
+
   </div>
 </section>
 
 <!-- ---- STEP 2: helmet ---- -->
 <section class="rail-step" data-step-section="1">
-  <div class="section-gap">
-    <div class="product-head">
-      <div class="row"><span class="name">Boundary MIPS</span><span class="price">$199</span></div>
-      <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(262)</span>
-      <p class="desc">The Boundary MIPS takes our best-selling premium helmet and integrates it into the MagFit™ System.</p>
-    </div>
-    <div class="opt-label-row"><span class="h6">COLOR</span><span class="val js-helmet-color">Matte Coal</span></div>
-    <div class="opt-group">
-      <div class="opt-group-head">
-        <p class="h6">HELMET SIZE</p>
-        <span class="size-chart"><img src="assets/icon-ruler.svg" alt="">Size Chart</span>
+  <div class="swap" id="helmetSwap">
+
+    <!-- view: helmet list -->
+    <div class="swap-view" data-view="list">
+      <p class="section-title">Select helmet</p>
+      <div class="model-list">
+        <button class="model-card" data-helmet="boundary">
+          <span class="model-thumb"><img src="assets/thumb-boundary.png" alt=""></span>
+          <span class="model-info">
+            <span class="model-top"><span class="name">Boundary MIPS</span><span class="price-pair"><s>$199</s><span class="cur">$199</span></span></span>
+            <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(262)</span>
+            <span class="model-desc">Our best-selling premium helmet</span>
+          </span>
+        </button>
+        <button class="model-card" data-helmet="tenmile">
+          <span class="model-thumb"><img src="assets/thumb-tenmile.png" alt=""></span>
+          <span class="model-info">
+            <span class="model-top"><span class="name">Tenmile 2 MIPS</span><span class="price-pair"><s>$149</s><span class="cur">$149</span></span></span>
+            <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(1563)</span>
+            <span class="model-desc">Lightweight all-mountain protection</span>
+          </span>
+        </button>
+        <button class="model-card" data-helmet="headland">
+          <span class="model-thumb"><img src="assets/thumb-boundary.png" alt=""></span>
+          <span class="model-info">
+            <span class="model-top"><span class="name">Headland</span><span class="price-pair"><s>$169</s><span class="cur">$169</span></span></span>
+            <span class="rating"><img src="assets/stars-5.svg" alt="5 stars">(1563)</span>
+            <span class="model-desc">Classic fit, everyday versatility</span>
+          </span>
+        </button>
       </div>
-      <div class="btn-row js-helmet-size">
-        <button class="opt-btn opt-btn--tall" data-size="large">LARGE<br>(59-63CM)</button>
-        <button class="opt-btn opt-btn--tall" data-size="medium">MEDIUM<br>(55-59CM)</button>
-        <button class="opt-btn opt-btn--tall" data-size="small">SMALL<br>(51-55CM)</button>
+    </div>
+
+    <!-- view: helmet details -->
+    <div class="swap-view is-hidden" data-view="detail">
+      <div class="detail">
+        <div class="dd">
+          <button class="selected-box js-dd-toggle">
+            <span class="tag">Selected</span>
+            <span class="row"><span class="name js-h-name">Boundary MIPS</span><span class="right"><span class="price-pair"><s class="js-h-compare">$199</s><span class="cur js-h-price">$199</span></span> <svg class="chev" width="14" height="8" viewBox="0 0 14 8" fill="none"><path d="M1 1l6 6 6-6" stroke="#2c2a26" stroke-width="1.5"/></svg></span></span>
+          </button>
+          <div class="dd-menu">
+            <button class="dd-item is-current" data-helmet="boundary"><span class="name">Boundary MIPS</span><span class="price-pair"><s>$199</s><span class="cur">$199</span></span></button>
+            <button class="dd-item" data-helmet="tenmile"><span class="name">Tenmile 2 MIPS</span><span class="price-pair"><s>$149</s><span class="cur">$149</span></span></button>
+            <button class="dd-item" data-helmet="headland"><span class="name">Headland</span><span class="price-pair"><s>$169</s><span class="cur">$169</span></span></button>
+          </div>
+        </div>
+        <div class="detail-body" id="helmetBody">
+          <div class="detail-blurb">
+            <span class="rating"><img src="assets/stars-5.svg" alt="5 stars"><span class="js-h-rating">(262)</span></span>
+            <p class="js-h-desc">The Boundary MIPS takes our best-selling premium helmet and integrates it into the MagFit™ System.</p>
+          </div>
+          <div class="opt-label-row"><span class="h6">COLOR</span><span class="val js-helmet-color">Reveal 4K Black Mirror / Matte Black</span></div>
+          <div class="opt-group">
+            <div class="opt-group-head">
+              <p class="h6">HELMET SIZE</p>
+              <span class="size-chart"><img src="assets/icon-ruler.svg" alt="">Size Chart</span>
+            </div>
+            <div class="btn-row js-helmet-size" data-opts>
+              <button class="opt-btn opt-btn--tall" data-size="large">LARGE<br>(59-63CM)</button>
+              <button class="opt-btn opt-btn--tall is-selected" data-size="medium">MEDIUM<br>(55-59CM)</button>
+              <button class="opt-btn opt-btn--tall" data-size="small">SMALL<br>(51-55CM)</button>
+            </div>
+          </div>
+          <div class="opt-group">
+            <p class="h6">HELMET COLOR</p>
+            <div class="swatch-row js-helmet-swatches">
+              <button class="swatch" data-color="Matte Black"><img src="assets/helmet-sw-1.png" alt="Matte Black"></button>
+              <button class="swatch" data-color="Matte Slate"><img src="assets/helmet-sw-2.png" alt="Matte Slate"></button>
+              <button class="swatch" data-color="Matte Navy"><img src="assets/helmet-sw-3.png" alt="Matte Navy"></button>
+              <button class="swatch is-selected" data-color="Matte Coal"><img src="assets/helmet-sw-4.png" alt="Matte Coal"></button>
+            </div>
+          </div>
+        </div>
+        <button class="bundle-btn js-helmet-bundle" type="button">Add to bundle</button>
       </div>
     </div>
-    <div class="opt-group">
-      <p class="h6">HELMET COLOR</p>
-      <div class="swatch-row js-helmet-swatches">
-        <button class="swatch" data-color="Matte Black"><img src="assets/helmet-sw-1.png" alt=""></button>
-        <button class="swatch" data-color="Matte Slate"><img src="assets/helmet-sw-2.png" alt=""></button>
-        <button class="swatch" data-color="Matte Navy"><img src="assets/helmet-sw-3.png" alt=""></button>
-        <button class="swatch is-selected" data-color="Matte Coal"><img src="assets/helmet-sw-4.png" alt=""></button>
-      </div>
-    </div>
+
   </div>
 </section>
 
 <!-- ---- STEP 3: extras ---- -->
 <section class="rail-step" data-step-section="2">
-  <p class="extras-title">Round out your setup</p>
+  <p class="section-title">Round out your setup</p>
   <div class="js-extras">
-    <button class="extra-card" data-extra="balaclava" data-price="39">
-      <span class="row"><span class="name">Elevated Balaclava</span><span class="price">$39</span></span>
-      <span class="rating"><img src="assets/star-1.svg" alt="">4.8</span>
-      <span class="desc">Perfectly weighted, buttery-soft, and full protection from the sun and cold.</span>
-      <span class="add-state js-add-state">Add to bundle</span>
-    </button>
     <button class="extra-card" data-extra="necktube" data-price="29">
-      <span class="row"><span class="name">Classic Neck Tube</span><span class="price">$29</span></span>
+      <span class="row"><span class="name">Classic Neck Tube</span><span class="price-pair"><s>$29</s><span class="cur">$29</span></span></span>
       <span class="rating"><img src="assets/star-1.svg" alt="">4.8</span>
-      <span class="desc">Warmth and coverage without the full-head fit of a balaclava.</span>
-      <span class="add-state js-add-state">Add to bundle</span>
+      <span class="desc">The Neck Tube adds warmth and coverage without the full-head fit of a balaclava. Soft, comfortable, and easy to stash in a pocket.</span>
+    </button>
+    <button class="extra-card" data-extra="balaclava" data-price="39">
+      <span class="row"><span class="name">Elevated Balaclava</span><span class="price-pair"><s>$39</s><span class="cur">$39</span></span></span>
+      <span class="rating"><img src="assets/star-1.svg" alt="">4.8</span>
+      <span class="desc">Perfectly weighted, buttery-soft, and full protection from the sun and cold; this balaclava is a core piece of our kit.</span>
     </button>
     <button class="extra-card" data-extra="case" data-price="25">
-      <span class="row"><span class="name">Goggle Case</span><span class="price">$25</span></span>
+      <span class="row"><span class="name">Goggle Case</span><span class="price-pair"><s>$25</s><span class="cur">$25</span></span></span>
       <span class="rating"><img src="assets/star-1.svg" alt="">4.8</span>
-      <span class="desc">Tough, crush-resistant, and ventilated protective case.</span>
-      <span class="add-state js-add-state">Add to bundle</span>
+      <span class="desc">Protect your investment with this tough, crush-resistant, and ventilated protective case.</span>
     </button>
   </div>
 </section>
+
 <div id="railEnd" aria-hidden="true"></div>
 
 <!-- tooltip bottom sheets -->
@@ -510,18 +571,11 @@
 
 <!-- sticky footer -->
 <div class="rail-footer">
-  <div class="bundle-note js-goggle-added">
-    <span class="left"><span class="dot"></span><span class="js-goggle-added-text">Adapt 3 added to your bundle</span></span>
-  </div>
-  <div class="bundle-note js-helmet-added">
-    <span class="left"><span class="dot"></span><span>Boundary MIPS added to your bundle</span></span>
-    <button class="js-helmet-remove" type="button">Remove</button>
-  </div>
   <div class="price-bar" id="priceBar">
     <div class="price-info">
       <div class="price-line" id="priceLine">
         <span class="compare" id="comparePrice">$407</span>
-        <span class="total" id="totalPrice">$169</span>
+        <span class="total" id="totalPrice">$0</span>
       </div>
       <p class="price-note">+ shipping</p>
       <p class="price-nudge" id="priceNudge"></p>
@@ -534,16 +588,22 @@
 (function () {
   'use strict';
 
-  var PRICES = { adapt3: 169, fathom2: 239, divide: 149, helmet: 199 };
+  var GOGGLES = { adapt3: { name: 'Adapt 3', price: 169 }, fathom2: { name: 'Fathom 2', price: 239 }, divide: { name: 'Divide', price: 149 } };
+  var HELMETS = {
+    boundary: { name: 'Boundary MIPS', price: 199, rating: '(262)', desc: 'The Boundary MIPS takes our best-selling premium helmet and integrates it into the MagFit™ System.' },
+    tenmile: { name: 'Tenmile 2 MIPS', price: 149, rating: '(1563)', desc: 'The Tenmile 2 MIPS brings lightweight, all-mountain protection into the MagFit™ System.' },
+    headland: { name: 'Headland', price: 169, rating: '(1563)', desc: 'The Headland pairs a classic fit with everyday versatility, fully integrated with MagFit™.' }
+  };
   var MODEL_LENS = { adapt3: 'adapt3', fathom2: 'f2t', divide: 'divide' };
-  var MODEL_META = { adapt3: { name: 'Adapt 3', price: '$169' }, fathom2: { name: 'Fathom 2', price: '$239' }, divide: { name: 'Divide', price: '$149' } };
-  var state = { goggle: 'adapt3', helmet: false, extras: {}, extrasOrder: [], activePanel: 0 };
+  var state = { goggle: 'adapt3', goggleAdded: false, helmet: 'boundary', helmetAdded: false, extras: {}, extrasOrder: [], activePanel: 0 };
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ===== stage / rack focus ===== */
+  /* ============ rack focus stage ============ */
   var stage = document.getElementById('stage');
   var panels = Array.prototype.slice.call(stage.querySelectorAll('.stage-panel'));
-  requestAnimationFrame(function () { requestAnimationFrame(function () { stage.classList.add('is-ready'); }); });
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () { stage.classList.add('is-ready'); });
+  });
 
   var noGlb = new URLSearchParams(location.search).get('noglb') === '1';
   function ensureModel(container) {
@@ -577,7 +637,6 @@
     syncStepHeader(i);
   }
 
-  /* scrollspy: active band sits in the content area below the pinned stage */
   var sections = Array.prototype.slice.call(document.querySelectorAll('[data-step-section]'));
   var observer = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
@@ -586,12 +645,12 @@
   }, { rootMargin: '-55% 0px -25% 0px' });
   sections.forEach(function (s) { observer.observe(s); });
 
-  /* ===== step header ===== */
+  /* ============ step header ============ */
   var tabs = Array.prototype.slice.call(document.querySelectorAll('.step-tab'));
   function syncStepHeader(active) {
     tabs.forEach(function (t, i) {
       t.classList.toggle('is-active', i === active);
-      t.classList.toggle('is-done', i !== active && ((i === 0 && state.goggleConfirmed) || (i === 1 && state.helmet) || (i === 2 && Object.keys(state.extras).length > 0)));
+      t.classList.toggle('is-done', i !== active && ((i === 0 && state.goggleAdded) || (i === 1 && state.helmetAdded) || (i === 2 && state.extrasOrder.length > 0)));
     });
   }
   tabs.forEach(function (t, i) {
@@ -601,34 +660,46 @@
     });
   });
 
-  /* ===== goggle swap machine ===== */
-  var swapRoot = document.getElementById('goggleSwap');
-  var views = {};
-  Array.prototype.slice.call(swapRoot.querySelectorAll('.swap-view')).forEach(function (v) { views[v.getAttribute('data-view')] = v; });
-  var currentView = 'list', swapping = false;
-  function swapTo(name) {
-    if (swapping || name === currentView) return;
-    swapping = true;
-    var out = views[currentView], inn = views[name];
-    out.classList.add('is-leaving');
-    setTimeout(function () {
-      out.classList.add('is-hidden'); out.classList.remove('is-leaving');
-      inn.classList.add('is-entering'); inn.classList.remove('is-hidden');
-      void inn.offsetHeight;
-      inn.classList.remove('is-entering');
-      currentView = name; swapping = false;
-    }, reduceMotion ? 0 : 300);
+  /* ============ generic list/detail swap machine ============ */
+  function makeSwap(rootId) {
+    var root = document.getElementById(rootId);
+    var views = {};
+    Array.prototype.slice.call(root.querySelectorAll('.swap-view')).forEach(function (v) {
+      views[v.getAttribute('data-view')] = v;
+    });
+    var api = { current: 'list', busy: false, views: views };
+    api.to = function (name) {
+      if (api.busy || name === api.current) return;
+      api.busy = true;
+      var out = views[api.current], inn = views[name];
+      out.classList.add('is-leaving');
+      setTimeout(function () {
+        out.classList.add('is-hidden'); out.classList.remove('is-leaving');
+        inn.classList.add('is-entering'); inn.classList.remove('is-hidden');
+        void inn.offsetHeight;
+        inn.classList.remove('is-entering');
+        api.current = name; api.busy = false;
+      }, reduceMotion ? 0 : 300);
+    };
+    return api;
   }
+  var goggleSwap = makeSwap('goggleSwap');
+  var helmetSwap = makeSwap('helmetSwap');
 
+  /* ============ goggle detail bodies ============ */
   var selName = document.getElementById('selName');
   var selPrice = document.getElementById('selPrice');
+  var selCompare = document.getElementById('selCompare');
   var bodies = {};
-  Array.prototype.slice.call(swapRoot.querySelectorAll('.detail-body')).forEach(function (b) { bodies[b.getAttribute('data-body')] = b; });
+  Array.prototype.slice.call(document.getElementById('goggleSwap').querySelectorAll('.detail-body')).forEach(function (b) {
+    bodies[b.getAttribute('data-body')] = b;
+  });
   var currentBody = 'adapt3', bodySwapping = false;
-  function setSelector(model) {
-    selName.textContent = MODEL_META[model].name;
-    selPrice.textContent = MODEL_META[model].price;
-    Array.prototype.slice.call(document.querySelectorAll('.dd-item')).forEach(function (it) {
+  function setGoggleSelector(model) {
+    selName.textContent = GOGGLES[model].name;
+    selPrice.textContent = '$' + GOGGLES[model].price;
+    selCompare.textContent = '$' + GOGGLES[model].price;
+    Array.prototype.slice.call(document.querySelectorAll('#goggleSwap .dd-item')).forEach(function (it) {
       it.classList.toggle('is-current', it.getAttribute('data-model') === model);
     });
   }
@@ -650,19 +721,58 @@
     }, reduceMotion ? 0 : 300);
   }
 
-  Array.prototype.slice.call(document.querySelectorAll('.model-card')).forEach(function (card) {
+  Array.prototype.slice.call(document.querySelectorAll('#goggleSwap .model-card')).forEach(function (card) {
     card.addEventListener('click', function () {
       var model = card.getAttribute('data-model');
       state.goggle = model;
-      state.goggleConfirmed = true;
-      setSelector(model); showBody(model); swapTo('detail');
+      setGoggleSelector(model);
+      showBody(model);
+      goggleSwap.to('detail');
       setLens(MODEL_LENS[model], null);
-      showGoggleNote(model);
-      syncStepHeader(state.activePanel);
       updatePrice();
     });
   });
 
+  /* ============ helmet detail (single body, dynamic fields) ============ */
+  var hName = document.querySelector('.js-h-name');
+  var hPrice = document.querySelector('.js-h-price');
+  var hCompare = document.querySelector('.js-h-compare');
+  var hRating = document.querySelector('.js-h-rating');
+  var hDesc = document.querySelector('.js-h-desc');
+  var helmetBody = document.getElementById('helmetBody');
+  function setHelmetSelector(key) {
+    var h = HELMETS[key];
+    hName.textContent = h.name;
+    hPrice.textContent = '$' + h.price;
+    hCompare.textContent = '$' + h.price;
+    hRating.textContent = h.rating;
+    hDesc.textContent = h.desc;
+    Array.prototype.slice.call(document.querySelectorAll('#helmetSwap .dd-item')).forEach(function (it) {
+      it.classList.toggle('is-current', it.getAttribute('data-helmet') === key);
+    });
+  }
+  function swapHelmetBody(key) {
+    helmetBody.classList.add('is-leaving');
+    setTimeout(function () {
+      setHelmetSelector(key);
+      helmetBody.classList.remove('is-leaving');
+      helmetBody.classList.add('is-entering');
+      void helmetBody.offsetHeight;
+      helmetBody.classList.remove('is-entering');
+    }, reduceMotion ? 0 : 300);
+  }
+
+  Array.prototype.slice.call(document.querySelectorAll('#helmetSwap .model-card')).forEach(function (card) {
+    card.addEventListener('click', function () {
+      var key = card.getAttribute('data-helmet');
+      state.helmet = key;
+      setHelmetSelector(key);
+      helmetSwap.to('detail');
+      updatePrice();
+    });
+  });
+
+  /* ============ dropdowns ============ */
   function closeDropdowns() {
     Array.prototype.slice.call(document.querySelectorAll('.dd.is-open')).forEach(function (d) { d.classList.remove('is-open'); });
   }
@@ -675,23 +785,53 @@
       if (!open) dd.classList.add('is-open');
     });
   });
-  Array.prototype.slice.call(document.querySelectorAll('.dd-item')).forEach(function (item) {
+  Array.prototype.slice.call(document.querySelectorAll('.dd-item[data-model]')).forEach(function (item) {
     item.addEventListener('click', function (e) {
       e.stopPropagation();
       closeDropdowns();
       var model = item.getAttribute('data-model');
       if (model === state.goggle) return;
       state.goggle = model;
-      setSelector(model); swapBody(model);
+      setGoggleSelector(model);
+      swapBody(model);
       setLens(MODEL_LENS[model], null);
-      showGoggleNote(model);
-      syncStepHeader(state.activePanel);
+      updatePrice();
+    });
+  });
+  Array.prototype.slice.call(document.querySelectorAll('.dd-item[data-helmet]')).forEach(function (item) {
+    item.addEventListener('click', function (e) {
+      e.stopPropagation();
+      closeDropdowns();
+      var key = item.getAttribute('data-helmet');
+      if (key === state.helmet) return;
+      state.helmet = key;
+      swapHelmetBody(key);
       updatePrice();
     });
   });
   document.addEventListener('click', closeDropdowns);
 
-  /* ===== lens layers ===== */
+  /* ============ add / remove bundle buttons ============ */
+  var goggleBtn = document.querySelector('.js-goggle-bundle');
+  var helmetBtn = document.querySelector('.js-helmet-bundle');
+  function syncBundleButtons() {
+    goggleBtn.textContent = state.goggleAdded ? 'Remove from bundle' : 'Add to bundle';
+    helmetBtn.textContent = state.helmetAdded ? 'Remove from bundle' : 'Add to bundle';
+  }
+  goggleBtn.addEventListener('click', function () {
+    state.goggleAdded = !state.goggleAdded;
+    syncBundleButtons();
+    syncStepHeader(state.activePanel);
+    updatePrice();
+  });
+  helmetBtn.addEventListener('click', function () {
+    state.helmetAdded = !state.helmetAdded;
+    syncBundleButtons();
+    syncStepHeader(state.activePanel);
+    updatePrice();
+  });
+
+  /* ============ lens layers / hero ============ */
   var lensLayers = Array.prototype.slice.call(document.querySelectorAll('.lens-layer'));
   var lensNameEl = document.querySelector('.js-lens-name');
   function setLens(key, label) {
@@ -719,52 +859,6 @@
       if (lens) setLens(lens, null);
     });
   });
-
-  /* ===== toasts ===== */
-  var helmetAdded = document.querySelector('.js-helmet-added');
-  var goggleAdded = document.querySelector('.js-goggle-added');
-  var noteTimers = new Map();
-  function showNote(el) {
-    var t = noteTimers.get(el) || {};
-    clearTimeout(t.hold); clearTimeout(t.fade);
-    el.classList.remove('is-fading');
-    el.classList.add('is-on');
-    t.hold = setTimeout(function () {
-      el.classList.add('is-fading');
-      t.fade = setTimeout(function () { el.classList.remove('is-on', 'is-fading'); }, 450);
-    }, 8000);
-    noteTimers.set(el, t);
-  }
-  function hideNote(el) {
-    var t = noteTimers.get(el) || {};
-    clearTimeout(t.hold); clearTimeout(t.fade);
-    el.classList.remove('is-on', 'is-fading');
-  }
-  function showGoggleNote(model) {
-    goggleAdded.querySelector('.js-goggle-added-text').textContent = MODEL_META[model].name + ' added to your bundle';
-    showNote(goggleAdded);
-  }
-
-  /* ===== helmet ===== */
-  Array.prototype.slice.call(document.querySelectorAll('.js-helmet-size .opt-btn')).forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      selectWithin(btn);
-      if (!state.helmet) {
-        state.helmet = true;
-        showNote(helmetAdded);
-        syncStepHeader(state.activePanel);
-        updatePrice();
-      }
-    });
-  });
-  document.querySelector('.js-helmet-remove').addEventListener('click', function (e) {
-    e.stopPropagation();
-    state.helmet = false;
-    hideNote(helmetAdded);
-    Array.prototype.slice.call(document.querySelectorAll('.js-helmet-size .opt-btn')).forEach(function (b) { b.classList.remove('is-selected'); });
-    syncStepHeader(state.activePanel);
-    updatePrice();
-  });
   var helmetColorEl = document.querySelector('.js-helmet-color');
   Array.prototype.slice.call(document.querySelectorAll('.js-helmet-swatches .swatch')).forEach(function (sw) {
     sw.addEventListener('click', function () {
@@ -773,7 +867,7 @@
     });
   });
 
-  /* ===== extras ===== */
+  /* ============ extras ============ */
   Array.prototype.slice.call(document.querySelectorAll('.extra-card')).forEach(function (card) {
     card.addEventListener('click', function () {
       var key = card.getAttribute('data-extra');
@@ -782,70 +876,52 @@
       if (on) { state.extras[key] = price; state.extrasOrder.push(key); }
       else { delete state.extras[key]; state.extrasOrder = state.extrasOrder.filter(function (k) { return k !== key; }); }
       card.classList.toggle('is-selected', on);
-      card.querySelector('.js-add-state').textContent = on ? 'In your bundle' : 'Add to bundle';
       syncStepHeader(state.activePanel);
       updatePrice();
     });
   });
 
-  /* ===== tooltips: bottom sheets ===== */
-  var scrim = document.querySelector('.js-tip-scrim');
+  /* ============ tooltips: drawer + scrim ============ */
+  var tipScrim = document.querySelector('.js-tip-scrim');
   function closeTips() {
-    Array.prototype.slice.call(document.querySelectorAll('.tip-sheet.is-open')).forEach(function (s) { s.classList.remove('is-open'); });
-    scrim.classList.remove('is-open');
+    Array.prototype.slice.call(document.querySelectorAll('.tip-sheet.is-open')).forEach(function (sh) { sh.classList.remove('is-open'); });
+    tipScrim.classList.remove('is-open');
   }
   Array.prototype.slice.call(document.querySelectorAll('.js-tip')).forEach(function (btn) {
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
       closeTips();
       var sheet = document.querySelector('.tip-sheet[data-sheet="' + btn.getAttribute('data-tip') + '"]');
-      if (sheet) { sheet.classList.add('is-open'); scrim.classList.add('is-open'); }
+      if (sheet) { sheet.classList.add('is-open'); tipScrim.classList.add('is-open'); }
     });
   });
   Array.prototype.slice.call(document.querySelectorAll('.js-tip-close')).forEach(function (btn) {
     btn.addEventListener('click', closeTips);
   });
-  scrim.addEventListener('click', closeTips);
+  tipScrim.addEventListener('click', closeTips);
 
-  /* ===== price ===== */
+  /* ============ price bar ============ */
   var priceBar = document.getElementById('priceBar');
   var totalEl = document.getElementById('totalPrice');
   var compareEl = document.getElementById('comparePrice');
-  var nudgeEl = document.getElementById('priceNudge');
-  var displayedTotal = PRICES[state.goggle];
+  var displayedTotal = 0;
+
   function bundleSubtotal() {
-    var sum = PRICES[state.goggle];
-    if (state.helmet) sum += PRICES.helmet;
+    var sum = 0;
+    if (state.goggleAdded) sum += GOGGLES[state.goggle].price;
+    if (state.helmetAdded) sum += HELMETS[state.helmet].price;
     Object.keys(state.extras).forEach(function (k) { sum += state.extras[k]; });
     return sum;
   }
   function updatePrice() {
     var subtotal = bundleSubtotal();
-    var extrasCount = state.extrasOrder.length;
     // Live rule: 15% off goggle + helmet + ONE accessory (the one that
     // triggered the bundle). Additional accessories stay full price.
-    var discounted = state.helmet && extrasCount > 0;
-    var discountBase = discounted ? PRICES[state.goggle] + PRICES.helmet + state.extras[state.extrasOrder[0]] : 0;
+    var discounted = state.goggleAdded && state.helmetAdded && state.extrasOrder.length > 0;
+    var discountBase = discounted ? GOGGLES[state.goggle].price + HELMETS[state.helmet].price + state.extras[state.extrasOrder[0]] : 0;
     var target = subtotal - discountBase * 0.15;
-
     priceBar.classList.toggle('has-discount', discounted);
     compareEl.textContent = '$' + subtotal;
-
-    // Promo messaging: a goggle alone stays buyable, but say the 15% won't apply.
-    var msg = '';
-    if (!discounted) {
-      var missing = [];
-      if (!state.helmet) missing.push('a helmet');
-      if (extrasCount === 0) missing.push('an accessory');
-      msg = 'Buy now, or add ' + missing.join(' + ') + ' to save 15% on the bundle';
-    } else if (extrasCount > 1) {
-      msg = '15% applies to your goggle, helmet + first accessory';
-    } else {
-      msg = 'You\u2019re saving $' + (discountBase * 0.15).toFixed(2) + ' with the MagFit\u2122 bundle';
-    }
-    nudgeEl.textContent = msg;
-    priceBar.classList.add('has-nudge');
-
     animateTotal(target);
   }
   function formatMoney(v) { return v % 1 === 0 ? '$' + v : '$' + v.toFixed(2); }
@@ -865,6 +941,7 @@
     }
     rafId = requestAnimationFrame(frame);
   }
+  syncBundleButtons();
   updatePrice();
 
   /* reveal the price bar at the end of the rail */
@@ -876,18 +953,26 @@
     });
   }, { rootMargin: '0px 0px 80px 0px' }).observe(endSentinel);
 
-  /* ===== screenshot presets ===== */
+  /* ============ screenshot presets ============ */
   var params = new URLSearchParams(location.search);
   if (params.get('scroll') === 'end') {
     setTimeout(function () { window.scrollTo(0, document.body.scrollHeight); }, 300);
   }
+  if (params.get('dd') === 'open') {
+    setTimeout(function () {
+      var dd = document.querySelector('#goggleSwap .dd');
+      if (dd) dd.classList.add('is-open');
+    }, 600);
+  }
   var preset = params.get('preset');
   if (preset === 'detail' || preset === 'bundle') {
-    document.querySelector('.model-card[data-model="adapt3"]').click();
+    document.querySelector('#goggleSwap .model-card[data-model="adapt3"]').click();
   }
   if (preset === 'bundle') {
-    document.querySelector('.js-helmet-size .opt-btn[data-size="medium"]').click();
-    document.querySelector('.extra-card[data-extra="balaclava"]').click();
+    goggleBtn.click();
+    document.querySelector('#helmetSwap .model-card[data-helmet="boundary"]').click();
+    helmetBtn.click();
+    document.querySelector('.extra-card[data-extra="necktube"]').click();
   }
 })();
 </script>
